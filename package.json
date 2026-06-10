@@ -1,0 +1,12 @@
+{
+  "name": "treasurer-scoreboard",
+  "version": "1.0.0",
+  "description": "Treasurer's Drink and Debt Scoreboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
