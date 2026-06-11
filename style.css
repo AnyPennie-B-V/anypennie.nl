@@ -3,21 +3,21 @@
    ========================================================================== */
 :root {
   --bg-color: #0c0d12;
-  --card-bg: rgba(18, 20, 29, 0.65);
-  --card-border: rgba(212, 175, 55, 0.15);
-  --card-border-focus: rgba(212, 175, 55, 0.4);
+  --card-bg: rgba(20, 29, 18, 0.65);
+  --card-border: #9b677c;
+  --card-border-focus: #E62272;
   
-  --gold-color: #d4af37;
-  --gold-hover: #eed8a1;
+  --gold-color: #E62272;
+  --gold-hover: #E62272;
   --crimson-color: #c91a32;
   --crimson-hover: #e6223b;
   --text-primary: #f5f6fa;
   --text-secondary: #a0a5c0;
   
-  --glass-glow: rgba(212, 175, 55, 0.25);
+  --glass-glow: #E62272;
   --red-glow: rgba(201, 26, 50, 0.3);
   
-  --btn-gradient: linear-gradient(135deg, #d4af37 0%, #c91a32 100%);
+  --btn-gradient: linear-gradient(135deg, #E62272 0%, #c91a32 100%);
   --btn-gradient-hover: linear-gradient(135deg, #eed8a1 0%, #e6223b 100%);
   
   --font-display: 'Bebas Neue', sans-serif;
@@ -83,12 +83,24 @@ header {
 }
 
 .header-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: 100%;
   padding: 1.2rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.site-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.logo-image {
+  height: 70px;
+  width: auto;
+  display: block;
+  margin-right: 20rem;
 }
 
 .site-logo {
@@ -706,15 +718,15 @@ nav .nav-link.active::after {
 }
 
 .type-badge.any_received {
-  background: rgba(212, 175, 55, 0.16);
+  background: rgba(212, 55, 199, 0.16);
   color: var(--gold-hover);
   border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 .type-badge.any_taken {
   background: rgba(33, 150, 243, 0.14);
-  color: #8fd0ff;
-  border: 1px solid rgba(33, 150, 243, 0.28);
+  color: #8fffba;
+  border: 1px solid rgba(37, 243, 33, 0.28);
 }
 
 .tx-value-col {

@@ -110,7 +110,11 @@ async function saveScoreboardData(data) {
 }
 
 function normalizePersonName(name) {
-  return String(name || '').trim().replace(/\s+/g, ' ');
+  const normalized = String(name || '').trim().replace(/\s+/g, ' ');
+  return normalized
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function createLedgerEntryId() {
