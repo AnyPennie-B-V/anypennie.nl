@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Treasurer's Bottle Scoreboard</title>
-  <meta name="description" content="Official drink tracker and debt ledger for the study association treasurer. Powered by Grolsch Kanon and Ketel 1.">
+  <title>Any Pennie</title>
+  <meta name="description" content="Official anytimer tracker for the study association treasurer. Log who received an any and when it is taken.">
   
   <!-- Google Fonts: Bebas Neue (for headers) and Inter (for body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,13 +23,13 @@
   <header>
     <div class="header-container">
       <div class="site-logo" id="site-logo">
-        TREASURER'S BOTTLE SCOREBOARD
+        ANY PENNIE ADMINISTRATION
       </div>
       <nav>
         <ul class="nav-links">
-          <li><a href="#scoreboard" class="nav-link active" id="nav-scoreboard">SCOREBOARD</a></li>
+          <li><a href="#scoreboard" class="nav-link active" id="nav-scoreboard">DASHBOARD</a></li>
           <li><a href="#history" class="nav-link" id="nav-history">HISTORY</a></li>
-          <li><a href="#log-consumption" class="nav-link" id="nav-log-consumption">LOG CONSUMPTION</a></li>
+           <li><a href="#log-consumption" class="nav-link" id="nav-log-consumption">LOG ANYTIMERS</a></li>
           <li><a href="#rules" class="nav-link" id="nav-rules">RULES</a></li>
           <li><a href="#about" class="nav-link" id="nav-about">ABOUT</a></li>
         </ul>
@@ -51,7 +51,7 @@
     <!-- TAB 1: SCOREBOARD (HOME) -->
     <section id="tab-scoreboard" class="tab-content active">
       <div class="hero-section">
-        <h1 class="hero-title">CHASED BY THE TREASURER</h1>
+        <h1 class="hero-title">ANYPENNIE DASHBOARD</h1>
         
         <!-- The Glass Showcase Case -->
         <div class="glass-showcase-container">
@@ -70,59 +70,26 @@
         </div>
 
         <!-- Scroll/Explore Trigger Button -->
-        <button class="cta-button" id="btn-explore">EXPLORE THE SCOREBOARD</button>
+        <button class="cta-button" id="btn-explore">SEE ALL ANY'S</button>
 
-        <!-- Unopened Debt Ledger Summary -->
+        <!-- Anytimer Summary -->
         <div class="card debt-card" id="unopened-debt-section">
-          <h2 class="card-title">THE UNOPENED DEBT</h2>
+          <h2 class="card-title">TOTAL OUTSTANDING ANY PENNIES</h2>
           <div class="debt-value-container">
-            <span class="currency-symbol">€</span>
-            <span class="debt-amount" id="debt-amount-val">0.00</span>
+            <span class="debt-amount" id="anytimers-total">0</span>
+            <span class="anytimers-unit">anys</span>
           </div>
           <p class="debt-description">
-            This represents the current outstanding beverage balance of the Treasurer. Each Kanon can and Ketel 1 bottle logged increases the debt, and cash contributions reduce it. The balance must be cleared prior to the next General Assembly audit.
+            Each card below shows how many anys a person still has to take. The audit committee first logs that an any has been assigned, then records it again when it is actually taken.
           </p>
-
-          <!-- Simple SVG Debt Trend Chart -->
-          <div class="chart-container">
-            <svg id="debt-chart" viewBox="0 0 500 120" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="var(--gold-color)" stop-opacity="0.4"></stop>
-                  <stop offset="100%" stop-color="var(--gold-color)" stop-opacity="0.0"></stop>
-                </linearGradient>
-              </defs>
-              <!-- Filled area path -->
-              <path id="chart-area" d="M 0 120 C 50 100, 100 110, 150 90 C 200 70, 250 85, 300 60 C 350 35, 400 45, 500 30 L 500 120 Z" fill="url(#chart-grad)"></path>
-              <!-- Line path -->
-              <path id="chart-line" d="M 0 120 C 50 100, 100 110, 150 90 C 200 70, 250 85, 300 60 C 350 35, 400 45, 500 30" fill="none" stroke="var(--gold-color)" stroke-width="2.5" stroke-linecap="round"></path>
-            </svg>
-            <div class="chart-x-labels">
-              <span>Setup</span>
-              <span>Week 1</span>
-              <span>Week 2</span>
-              <span>Current</span>
-            </div>
+          <div class="anytimer-summary-row">
+            <span class="ledger-summary-pill">People tracked: <strong id="anytimers-count">0</strong></span>
+            <span class="ledger-summary-pill">Ledger entries: <strong id="ledger-count-inline">0</strong></span>
           </div>
         </div>
 
-        <!-- Breakdown counters -->
-        <div class="grid-stats">
-          <div class="card stat-card kanon-theme">
-            <div class="stat-bg-blur"></div>
-            <div class="stat-label">GROLSCH KANON (0.5L)</div>
-            <div class="stat-value" id="count-kanon">0</div>
-            <div class="stat-sub" id="price-kanon-sub">@ €1.80 each</div>
-            <div class="stat-total" id="total-kanon-cost">Total: €0.00</div>
-          </div>
-
-          <div class="card stat-card ketel-theme">
-            <div class="stat-bg-blur"></div>
-            <div class="stat-label">KETEL 1 JENEVER (1.0L)</div>
-            <div class="stat-value" id="count-ketel1">0</div>
-            <div class="stat-sub" id="price-ketel1-sub">@ €18.50 each</div>
-            <div class="stat-total" id="total-ketel1-cost">Total: €0.00</div>
-          </div>
+        <div class="anytimers-grid" id="anytimers-grid">
+          <div class="anytimer-empty">Loading anytimers...</div>
         </div>
 
       </div>
@@ -147,9 +114,9 @@
                 <tr>
                   <th>Date & Time</th>
                   <th>Type</th>
-                  <th>Drink</th>
+                  <th>Person</th>
                   <th>Qty</th>
-                  <th>Value</th>
+                  <th>Remaining</th>
                   <th>Admin</th>
                   <th>Notes</th>
                   <th class="admin-only-col hidden">Actions</th>
@@ -158,7 +125,7 @@
               <tbody id="ledger-body">
                 <!-- Loaded dynamically -->
                 <tr>
-                  <td colspan="8" class="text-center">Loading transactions...</td>
+                  <td colspan="8" class="text-center">Loading anytimer history...</td>
                 </tr>
               </tbody>
             </table>
@@ -175,7 +142,7 @@
         <!-- Login Form -->
         <div class="card auth-card" id="auth-panel">
           <h2>Security Verification</h2>
-          <p>Please enter the shared secret to access administrative controls and log updates.</p>
+          <p>Please enter the shared secret to access administrative controls and log anytimers.</p>
           <form id="login-form">
             <div class="form-group">
               <label for="admin-password">Shared Secret Key</label>
@@ -196,94 +163,65 @@
 
           <div class="grid-admin-cards">
             
-            <!-- Quick Log Drink -->
+            <!-- Log Any Received -->
             <div class="card admin-control-card">
-              <h3>Log Consumption</h3>
-              <p>Record drinks recently chased by the treasurer.</p>
-              
-              <div class="quick-log-grid">
-                <button class="quick-log-btn kanon-theme" id="btn-quick-kanon">
-                  <span>+1 Grolsch Kanon</span>
-                  <small>+€1.80</small>
-                </button>
-                <button class="quick-log-btn ketel-theme" id="btn-quick-ketel">
-                  <span>+1 Ketel 1 Bottle</span>
-                  <small>+€18.50</small>
-                </button>
-              </div>
+              <h3>Log Any Received</h3>
+              <p>Record that the committee has assigned one or more anys to a person.</p>
 
-              <hr class="card-divider">
-
-              <form id="form-log-consumption">
+              <form id="form-log-any-received">
+                <div class="form-group">
+                  <label for="input-received-person">Person Name</label>
+                  <input type="text" id="input-received-person" placeholder="e.g. Rick" required>
+                </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="select-drink">Select Beverage</label>
-                    <select id="select-drink" required>
-                      <option value="kanon">Grolsch Kanon (0.5L Can)</option>
-                      <option value="ketel1">Ketel 1 Jenever (1.0L Bottle)</option>
-                    </select>
+                    <label for="input-received-qty">Any Count</label>
+                    <input type="number" id="input-received-qty" min="1" max="99" value="1" required>
                   </div>
                   <div class="form-group">
-                    <label for="input-qty">Quantity</label>
-                    <input type="number" id="input-qty" min="1" max="99" value="1" required>
+                    <label for="input-received-admin">Auditor Name</label>
+                    <input type="text" id="input-received-admin" placeholder="e.g. Alice" required>
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="input-cons-admin">Auditor Name</label>
-                  <input type="text" id="input-cons-admin" placeholder="e.g. Alice (Co-Treasurer)" required>
+                  <label for="input-received-note">Note / Reason</label>
+                  <input type="text" id="input-received-note" placeholder="e.g. Audit committee received an any" required>
                 </div>
-                <div class="form-group">
-                  <label for="input-cons-note">Note / Event Description</label>
-                  <input type="text" id="input-cons-note" placeholder="e.g., Weekly pre-drinks, Board meeting" required>
-                </div>
-                <button type="submit" class="cta-button">Log Drink Entry</button>
+                <button type="submit" class="cta-button">Log Any Received</button>
               </form>
             </div>
 
-            <!-- Record Payment -->
+            <!-- Log Any Taken -->
             <div class="card admin-control-card">
-              <h3>Record Treasury Payment</h3>
-              <p>Record cash or bank contributions paid by the treasurer to clear their debt.</p>
-              
-              <form id="form-log-payment">
+              <h3>Log Any Taken</h3>
+              <p>Record when a person actually takes one or more of the anys they were owed.</p>
+
+              <form id="form-log-any-taken">
                 <div class="form-group">
-                  <label for="input-payment-amount">Payment Amount (€)</label>
-                  <input type="number" id="input-payment-amount" min="0.01" step="0.01" placeholder="0.00" required>
+                  <label for="input-taken-person">Person Name</label>
+                  <input type="text" id="input-taken-person" placeholder="e.g. Rick" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="input-taken-qty">Any Count</label>
+                    <input type="number" id="input-taken-qty" min="1" max="99" value="1" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="input-taken-admin">Auditor Name</label>
+                    <input type="text" id="input-taken-admin" placeholder="e.g. Alice" required>
+                  </div>
                 </div>
                 <div class="form-group">
-                  <label for="input-pay-admin">Auditor Name</label>
-                  <input type="text" id="input-pay-admin" placeholder="e.g. Alice (Co-Treasurer)" required>
+                  <label for="input-taken-note">Note / Context</label>
+                  <input type="text" id="input-taken-note" placeholder="e.g. Person finally took the any" required>
                 </div>
-                <div class="form-group">
-                  <label for="input-pay-note">Payment Source / Note</label>
-                  <input type="text" id="input-pay-note" placeholder="e.g., Cash deposit, bank transfer" required>
-                </div>
-                <button type="submit" class="cta-button payment-btn">Log Payment Entry</button>
+                <button type="submit" class="cta-button payment-btn">Log Any Taken</button>
               </form>
             </div>
 
-            <!-- Settings & Pricing -->
-            <div class="card admin-control-card">
-              <h3>Configuration Settings</h3>
-              <p>Adjust current pricing metrics. Existing ledger items retain their original transaction value.</p>
-              
-              <form id="form-settings">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="setting-price-kanon">Kanon Price (€)</label>
-                    <input type="number" id="setting-price-kanon" min="0" step="0.01" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="setting-price-ketel1">Ketel 1 Price (€)</label>
-                    <input type="number" id="setting-price-ketel1" min="0" step="0.01" required>
-                  </div>
-                </div>
-                <button type="submit" class="cta-button secondary-btn">Save Pricing Configuration</button>
-              </form>
-
-              <hr class="card-divider">
-
+            <div class="card admin-control-card settings-card">
               <h3>Danger Zone</h3>
+              <p>Purge the audit trail and reset all outstanding any balances.</p>
               <div class="danger-zone-actions">
                 <button class="danger-btn" id="btn-clear-ledger">Purge Entire Ledger</button>
               </div>
@@ -303,26 +241,26 @@
         <div class="rules-grid">
           <div class="card rule-card">
             <div class="rule-num">01</div>
-            <h3>The Solitary Kanon Clause</h3>
-            <p>The Treasurer is permitted to consume Grolsch Kanon in solitude, provided it is consumed directly from a cold 0.5L can and logged in the system within 2 hours of opening.</p>
+              <h3>The Assignment Clause</h3>
+              <p>Whenever the audit committee receives an any on someone, it must be logged against that person's name before the ledger is considered complete.</p>
           </div>
 
           <div class="card rule-card">
             <div class="rule-num">02</div>
-            <h3>The Toast of the Ledger</h3>
-            <p>Every bottle of Ketel 1 opened by the Treasurer must be inaugurated with a communal toast to the board budget. The auditor present is legally obliged to double-check that the seal is broken and the event is recorded.</p>
+              <h3>The Redemption Clause</h3>
+              <p>When a person takes an any, the committee records the action immediately so the remaining count stays accurate.</p>
           </div>
 
           <div class="card rule-card">
             <div class="rule-num">03</div>
-            <h3>Auditor Immunity</h3>
-            <p>Logged items can only be approved and submitted by designated Auditors (board members with access to the shared secret). The Treasurer is prohibited from self-logging without witness verification.</p>
+              <h3>Auditor Immunity</h3>
+              <p>Only designated auditors can add or close an anytimer entry. The person owed the any does not self-approve their own balance.</p>
           </div>
 
           <div class="card rule-card">
             <div class="rule-num">04</div>
-            <h3>The Sovereign Balance</h3>
-            <p>Should the Unopened Debt exceed €150.00, the Treasurer's voting rights on financial decisions are suspended until a bank transfer/cash deposit is recorded, reducing the debt to acceptable operational levels.</p>
+              <h3>The Sovereign Balance</h3>
+              <p>The dashboard is always driven by the remaining any count per person. The audit trail is the source of truth, and the cards are only the current summary.</p>
           </div>
         </div>
       </div>
@@ -334,18 +272,18 @@
         <h1 class="section-title">ABOUT THE SCOREBOARD</h1>
         
         <div class="card about-card">
-          <h2>Treasurer's Bottle Scoreboard</h2>
-          <p>
-            This system was custom-built for the Study Association as an open, auditable record of the Treasurer's heavy-caliber consumption. Designed around the iconic <strong>Grolsch Kanon (11.6% ABV)</strong> cans and <strong>Ketel 1 Jonge Graanjenever</strong> bottles, the scoreboard acts as a ledger to calculate beer debt and maintain financial integrity.
+            <h2>Treasurer's Anytimer Scoreboard</h2>
+            <p>
+              This system was custom-built for the Study Association as an open, auditable record of who still has anys left to take. It keeps a person-by-person balance and an immutable audit trail for each assignment and redemption.
           </p>
           <div class="brand-showcase-logos">
             <div class="brand-logo-card">
-              <h4>Grolsch Kanon</h4>
-              <p>0.5L can / 11.6% ABV / Heavy Blond Lager</p>
+              <h4>Any Received</h4>
+              <p>The committee logs that someone has been assigned one or more anys.</p>
             </div>
             <div class="brand-logo-card">
-              <h4>Ketel 1</h4>
-              <p>1.0L bottle / 35% ABV / Dutch Jonge Jenever</p>
+              <h4>Any Taken</h4>
+              <p>The system records when the owed any is finally taken.</p>
             </div>
           </div>
           <hr class="card-divider">

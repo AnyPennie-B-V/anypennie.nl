@@ -406,7 +406,7 @@ nav .nav-link.active::after {
 /* Unopened Debt Section */
 .debt-card {
   width: 100%;
-  max-width: 550px;
+  max-width: 840px;
   margin-bottom: 3rem;
   text-align: center;
 }
@@ -432,11 +432,107 @@ nav .nav-link.active::after {
   letter-spacing: 1px;
 }
 
+.anytimers-unit {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: var(--gold-color);
+  margin-left: 0.5rem;
+  letter-spacing: 1px;
+}
+
 .debt-description {
   color: var(--text-secondary);
   font-size: 0.9rem;
   margin-bottom: 1.5rem;
   text-align: justify;
+}
+
+.anytimer-summary-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.anytimers-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.anytimer-card {
+  text-align: left;
+  padding: 1.4rem;
+  border-color: rgba(212, 175, 55, 0.18);
+}
+
+.anytimer-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.anytimer-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+}
+
+.anytimer-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.anytimer-status {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.anytimer-status.has-outstanding {
+  color: var(--gold-hover);
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.anytimer-status.is-cleared {
+  color: #81c784;
+  background: rgba(129, 199, 132, 0.12);
+}
+
+.anytimer-count-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.anytimer-count {
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  line-height: 1;
+  color: var(--gold-color);
+}
+
+.anytimer-count-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.anytimer-empty {
+  grid-column: 1 / -1;
+  padding: 1.5rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 /* SVGArea Chart for Debt */
@@ -607,6 +703,18 @@ nav .nav-link.active::after {
   background: rgba(46, 125, 50, 0.15);
   color: #81c784;
   border: 1px solid rgba(46, 125, 50, 0.3);
+}
+
+.type-badge.any_received {
+  background: rgba(212, 175, 55, 0.16);
+  color: var(--gold-hover);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.type-badge.any_taken {
+  background: rgba(33, 150, 243, 0.14);
+  color: #8fd0ff;
+  border: 1px solid rgba(33, 150, 243, 0.28);
 }
 
 .tx-value-col {

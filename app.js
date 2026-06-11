@@ -2,9 +2,8 @@
 // APP STATE & CONSTANTS
 // ==========================================================================
 const STATE = {
-  prices: { kanon: 1.80, ketel1: 18.50 },
-  counts: { kanon: 0, ketel1: 0 },
-  totalDebt: 0,
+  anytimers: [],
+  totalOutstanding: 0,
   ledger: [],
   token: localStorage.getItem('admin_token') || null,
   isAuthenticated: false
@@ -74,9 +73,8 @@ async function fetchData() {
 
     const resData = await response.json();
     
-    STATE.prices = resData.prices;
-    STATE.counts = resData.counts;
-    STATE.totalDebt = resData.totalDebt;
+    STATE.anytimers = resData.anytimers || [];
+    STATE.totalOutstanding = resData.totalOutstanding || 0;
     STATE.ledger = resData.ledger;
 
     // Display storage warning if Vercel is warning us
@@ -87,43 +85,64 @@ async function fetchData() {
       warningBanner.classList.add('hidden');
     }
 
-    renderScoreboard();
+    renderDashboard();
+    renderAnytimers();
     renderLedger();
-    renderDebtChart();
-    populateSettingsForm();
   } catch (error) {
     console.error('Error fetching data:', error);
   }
 }
 
-function renderScoreboard() {
-  // Quantities
-  document.getElementById('count-kanon').textContent = STATE.counts.kanon;
-  document.getElementById('count-ketel1').textContent = STATE.counts.ketel1;
-
-  // Price subs
-  document.getElementById('price-kanon-sub').textContent = `@ €${STATE.prices.kanon.toFixed(2)} each`;
-  document.getElementById('price-ketel1-sub').textContent = `@ €${STATE.prices.ketel1.toFixed(2)} each`;
-
-  // Total cost breakdowns
-  const kanonCost = STATE.counts.kanon * STATE.prices.kanon;
-  const ketel1Cost = STATE.counts.ketel1 * STATE.prices.ketel1;
-  document.getElementById('total-kanon-cost').textContent = `Total: €${kanonCost.toFixed(2)}`;
-  document.getElementById('total-ketel1-cost').textContent = `Total: €${ketel1Cost.toFixed(2)}`;
-
-  // Debt Value
-  const debtElement = document.getElementById('debt-amount-val');
-  const displayDebt = Math.abs(STATE.totalDebt) < 0.005 ? 0 : STATE.totalDebt;
-  debtElement.textContent = displayDebt.toFixed(2);
-  
-  // Visual colors based on debt status
-  if (STATE.totalDebt > 100) {
-    debtElement.style.color = 'var(--crimson-hover)';
-  } else if (STATE.totalDebt <= 0) {
-    debtElement.style.color = '#81c784'; // Green if healthy balance
-  } else {
-    debtElement.style.color = 'var(--text-primary)';
+function renderDashboard() {
+  const totalElement = document.getElementById('anytimers-total');
+  if (totalElement) {
+    totalElement.textContent = String(STATE.totalOutstanding);
   }
+
+  const cardCountElement = document.getElementById('anytimers-count');
+  if (cardCountElement) {
+    cardCountElement.textContent = String(STATE.anytimers.length);
+  }
+
+  const ledgerInlineCount = document.getElementById('ledger-count-inline');
+  if (ledgerInlineCount) {
+    ledgerInlineCount.textContent = String(STATE.ledger.length);
+  }
+}
+
+function renderAnytimers() {
+  const grid = document.getElementById('anytimers-grid');
+  if (!grid) return;
+
+  grid.innerHTML = '';
+
+  if (STATE.anytimers.length === 0) {
+    grid.innerHTML = '<div class="anytimer-empty">No anytimers logged yet. Use the admin panel to add the first one.</div>';
+    return;
+  }
+
+  STATE.anytimers.forEach(person => {
+    const card = document.createElement('article');
+    card.className = 'card anytimer-card';
+
+    const statusClass = person.outstanding > 0 ? 'has-outstanding' : 'is-cleared';
+
+    card.innerHTML = `
+      <div class="anytimer-card-top">
+        <div>
+          <div class="anytimer-name">${person.name}</div>
+          <div class="anytimer-meta">${person.taken} taken · ${person.received} received</div>
+        </div>
+        <span class="anytimer-status ${statusClass}">${person.outstanding > 0 ? 'OWED' : 'CLEARED'}</span>
+      </div>
+      <div class="anytimer-count-row">
+        <span class="anytimer-count">${person.outstanding}</span>
+        <span class="anytimer-count-label">anys remaining</span>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
 }
 
 function renderLedger() {
@@ -149,19 +168,15 @@ function renderLedger() {
     const dateStr = txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const timeStr = txDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     
-    // Badges & Labels
-    let drinkLabel = '-';
-    if (tx.drinkType === 'kanon') drinkLabel = 'Grolsch Kanon';
-    if (tx.drinkType === 'ketel1') drinkLabel = 'Ketel 1';
-
-    const typeBadge = `<span class="type-badge ${tx.type}">${tx.type}</span>`;
-    const qtyText = tx.type === 'consumption' ? tx.quantity : '-';
-    
-    // Value text coloring
-    const isPosVal = tx.value >= 0;
-    const sign = isPosVal ? '+' : '';
-    const valClass = isPosVal ? 'pos' : 'neg';
-    const valText = `<span class="tx-value-col ${valClass}">${sign}€${tx.value.toFixed(2)}</span>`;
+    const typeLabel = tx.type === 'any_received'
+      ? 'Any received'
+      : tx.type === 'any_taken'
+        ? 'Any taken'
+        : tx.type;
+    const typeBadge = `<span class="type-badge ${tx.type}">${typeLabel}</span>`;
+    const personName = tx.personName || tx.person || '—';
+    const qtyText = Number.isFinite(Number(tx.quantity)) ? tx.quantity : '—';
+    const balanceText = Number.isFinite(Number(tx.balanceAfter)) ? tx.balanceAfter : '—';
 
     // Admin action button
     const deleteColClass = STATE.isAuthenticated ? 'admin-only-col' : 'admin-only-col hidden';
@@ -172,9 +187,9 @@ function renderLedger() {
     tr.innerHTML = `
       <td><strong>${dateStr}</strong> <span style="color:var(--text-secondary); margin-left: 0.3rem;">${timeStr}</span></td>
       <td>${typeBadge}</td>
-      <td>${drinkLabel}</td>
+      <td>${personName}</td>
       <td>${qtyText}</td>
-      <td>${valText}</td>
+      <td>${balanceText}</td>
       <td>${tx.admin}</td>
       <td><span style="color:var(--text-secondary); font-style: italic;">${tx.note || '—'}</span></td>
       ${deleteAction}
@@ -189,74 +204,6 @@ function renderLedger() {
       btn.addEventListener('click', handleDeleteTransaction);
     });
   }
-}
-
-// Draws a dynamic SVG chart showing debt trends over time
-function renderDebtChart() {
-  const chartAreaPath = document.getElementById('chart-area');
-  const chartLinePath = document.getElementById('chart-line');
-  
-  if (STATE.ledger.length === 0) {
-    chartAreaPath.setAttribute('d', 'M 0 120 L 500 120 Z');
-    chartLinePath.setAttribute('d', 'M 0 120 L 500 120');
-    return;
-  }
-
-  // Sort logs oldest to newest for chronological plotting
-  const chronological = [...STATE.ledger].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-  // Compute points: running debt over time
-  let runningDebt = 0;
-  const points = [{ val: 0, time: new Date(chronological[0].timestamp) - 3600000 }]; // initial state (1 hour before first log)
-
-  chronological.forEach(tx => {
-    runningDebt += tx.value;
-    points.push({ val: runningDebt, time: new Date(tx.timestamp) });
-  });
-
-  // Plotting metrics
-  const width = 500;
-  const height = 120;
-  const paddingX = 15;
-  const paddingY = 15;
-
-  const minVal = 0; // standard base floor is €0
-  const maxVal = Math.max(...points.map(p => p.val), 20); // ensure scale handles at least €20 max debt to avoid flat lines
-
-  const minTime = points[0].time;
-  const maxTime = points[points.length - 1].time;
-  const timeDiff = maxTime - minTime || 1; // avoid division by zero
-
-  let pathString = '';
-  
-  points.forEach((pt, index) => {
-    // X scale based on time progress
-    const x = paddingX + ((pt.time - minTime) / timeDiff) * (width - 2 * paddingX);
-    // Y scale based on debt amount (higher debt = lower Y pixel coordinate)
-    const y = (height - paddingY) - ((pt.val - minVal) / (maxVal - minVal)) * (height - 2 * paddingY);
-    
-    if (index === 0) {
-      pathString += `M ${x.toFixed(1)} ${y.toFixed(1)}`;
-    } else {
-      // Draw smooth line
-      pathString += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
-    }
-  });
-
-  // Update line path
-  chartLinePath.setAttribute('d', pathString);
-
-  // Close the shape to the bottom for area fill
-  const firstX = paddingX;
-  const lastX = width - paddingX;
-  const bottomY = height;
-  const areaPathString = `${pathString} L ${lastX.toFixed(1)} ${bottomY} L ${firstX.toFixed(1)} ${bottomY} Z`;
-  chartAreaPath.setAttribute('d', areaPathString);
-}
-
-function populateSettingsForm() {
-  document.getElementById('setting-price-kanon').value = STATE.prices.kanon.toFixed(2);
-  document.getElementById('setting-price-ketel1').value = STATE.prices.ketel1.toFixed(2);
 }
 
 // ==========================================================================
@@ -322,21 +269,21 @@ function setupEventListeners() {
   // Auth: Logout Button
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
 
-  // Admin Actions: Quick log buttons
-  document.getElementById('btn-quick-kanon').addEventListener('click', () => quickLogDrink('kanon'));
-  document.getElementById('btn-quick-ketel').addEventListener('click', () => quickLogDrink('ketel1'));
+  const receivedForm = document.getElementById('form-log-any-received');
+  if (receivedForm) {
+    receivedForm.addEventListener('submit', handleLogAnyReceived);
+  }
 
-  // Admin Actions: Detailed Log Form
-  document.getElementById('form-log-consumption').addEventListener('submit', handleLogConsumption);
-
-  // Admin Actions: Log Payment Form
-  document.getElementById('form-log-payment').addEventListener('submit', handleLogPayment);
-
-  // Admin Actions: Settings Config Form
-  document.getElementById('form-settings').addEventListener('submit', handleSaveSettings);
+  const takenForm = document.getElementById('form-log-any-taken');
+  if (takenForm) {
+    takenForm.addEventListener('submit', handleLogAnyTaken);
+  }
 
   // Admin Actions: Clear Ledger Purge
-  document.getElementById('btn-clear-ledger').addEventListener('click', handleClearLedger);
+  const clearButton = document.getElementById('btn-clear-ledger');
+  if (clearButton) {
+    clearButton.addEventListener('click', handleClearLedger);
+  }
 }
 
 async function handleLogin(e) {
@@ -377,93 +324,53 @@ function handleLogout() {
   fetchData(); // Refresh to lock/hide admin table operations
 }
 
-async function quickLogDrink(drinkType) {
-  if (!STATE.isAuthenticated) return;
-  
-  const label = drinkType === 'kanon' ? 'Grolsch Kanon (Quick Log)' : 'Ketel 1 Bottle (Quick Log)';
-  
-  const payload = {
-    action: 'log_consumption',
-    drinkType,
-    quantity: 1,
-    admin: 'Quick Admin Audit',
-    note: label,
-    timestamp: new Date().toISOString()
-  };
-
-  await sendAdminAction(payload);
-}
-
-async function handleLogConsumption(e) {
+async function handleLogAnyReceived(e) {
   e.preventDefault();
-  
-  const drinkType = document.getElementById('select-drink').value;
-  const quantity = parseInt(document.getElementById('input-qty').value, 10);
-  const admin = document.getElementById('input-cons-admin').value;
-  const note = document.getElementById('input-cons-note').value;
 
   const payload = {
-    action: 'log_consumption',
-    drinkType,
-    quantity,
-    admin,
-    note,
+    action: 'log_any_received',
+    personName: document.getElementById('input-received-person').value,
+    quantity: parseInt(document.getElementById('input-received-qty').value, 10),
+    admin: document.getElementById('input-received-admin').value,
+    note: document.getElementById('input-received-note').value,
     timestamp: new Date().toISOString()
   };
 
   const success = await sendAdminAction(payload);
   if (success) {
-    document.getElementById('input-qty').value = '1';
-    document.getElementById('input-cons-admin').value = '';
-    document.getElementById('input-cons-note').value = '';
+    document.getElementById('input-received-person').value = '';
+    document.getElementById('input-received-qty').value = '1';
+    document.getElementById('input-received-admin').value = '';
+    document.getElementById('input-received-note').value = '';
   }
 }
 
-async function handleLogPayment(e) {
+async function handleLogAnyTaken(e) {
   e.preventDefault();
-  
-  const amount = parseFloat(document.getElementById('input-payment-amount').value);
-  const admin = document.getElementById('input-pay-admin').value;
-  const note = document.getElementById('input-pay-note').value;
 
   const payload = {
-    action: 'log_payment',
-    amount,
-    admin,
-    note,
+    action: 'log_any_taken',
+    personName: document.getElementById('input-taken-person').value,
+    quantity: parseInt(document.getElementById('input-taken-qty').value, 10),
+    admin: document.getElementById('input-taken-admin').value,
+    note: document.getElementById('input-taken-note').value,
     timestamp: new Date().toISOString()
   };
 
   const success = await sendAdminAction(payload);
   if (success) {
-    document.getElementById('input-payment-amount').value = '';
-    document.getElementById('input-pay-admin').value = '';
-    document.getElementById('input-pay-note').value = '';
+    document.getElementById('input-taken-person').value = '';
+    document.getElementById('input-taken-qty').value = '1';
+    document.getElementById('input-taken-admin').value = '';
+    document.getElementById('input-taken-note').value = '';
   }
-}
-
-async function handleSaveSettings(e) {
-  e.preventDefault();
-
-  const kanonPrice = parseFloat(document.getElementById('setting-price-kanon').value);
-  const ketel1Price = parseFloat(document.getElementById('setting-price-ketel1').value);
-
-  const payload = {
-    action: 'update_settings',
-    prices: {
-      kanon: kanonPrice,
-      ketel1: ketel1Price
-    }
-  };
-
-  await sendAdminAction(payload);
 }
 
 async function handleDeleteTransaction(e) {
   const transactionId = e.currentTarget.getAttribute('data-id');
   if (!transactionId) return;
 
-  if (confirm('Are you sure you want to permanently delete this ledger entry? This will adjust the scoreboard counts and debt values immediately.')) {
+  if (confirm('Are you sure you want to permanently delete this ledger entry? This will recalculate the affected anytimer balances immediately.')) {
     const payload = {
       action: 'delete_transaction',
       transactionId
@@ -473,7 +380,7 @@ async function handleDeleteTransaction(e) {
 }
 
 async function handleClearLedger() {
-  if (confirm('⚠️ WARNING: Are you absolutely sure you want to purge the entire ledger history? This will reset all beverage counts and outstanding debts to zero. This action is irreversible.')) {
+  if (confirm('⚠️ WARNING: Are you absolutely sure you want to purge the entire ledger history? This will reset all anytimer balances to zero. This action is irreversible.')) {
     const payload = {
       action: 'clear_ledger'
     };
@@ -506,15 +413,13 @@ async function sendAdminAction(payload) {
     const resData = await response.json();
     
     // Update local state with returning synced values
-    STATE.prices = resData.prices;
-    STATE.counts = resData.counts;
-    STATE.totalDebt = resData.totalDebt;
+    STATE.anytimers = resData.anytimers || [];
+    STATE.totalOutstanding = resData.totalOutstanding || 0;
     STATE.ledger = resData.ledger;
 
-    renderScoreboard();
+    renderDashboard();
+    renderAnytimers();
     renderLedger();
-    renderDebtChart();
-    populateSettingsForm();
     
     return true;
   } catch (error) {

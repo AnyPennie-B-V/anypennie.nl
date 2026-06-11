@@ -5,6 +5,11 @@ const crypto = require('crypto');
 const localDataPath = path.join(process.cwd(), 'data.json');
 let inMemoryData = null;
 
+const DEFAULT_DATA = {
+  anytimers: [],
+  ledger: []
+};
+
 // Helper to verify admin token
 function verifyToken(req) {
   const authHeader = req.headers.authorization;
@@ -25,8 +30,6 @@ function verifyToken(req) {
 
 // Helper to read data with dual-mode storage
 async function getScoreboardData() {
-  let isKV = false;
-
   // 1. Try Vercel KV via REST API
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
     try {
@@ -41,7 +44,7 @@ async function getScoreboardData() {
       const resData = await response.json();
       if (resData.result) {
         const parsed = JSON.parse(resData.result);
-        return { data: parsed, isKV: true, warning: false };
+        return { data: parsed, warning: false };
       }
     } catch (err) {
       console.error('Failed to fetch from Vercel KV, falling back:', err);
@@ -50,7 +53,7 @@ async function getScoreboardData() {
 
   // 2. Try In-Memory Cache
   if (inMemoryData) {
-    return { data: inMemoryData, isKV: false, warning: !!process.env.VERCEL };
+    return { data: inMemoryData, warning: !!process.env.VERCEL };
   }
 
   // 3. Try Local File
@@ -61,19 +64,14 @@ async function getScoreboardData() {
       if (process.env.VERCEL) {
         inMemoryData = data; // Cache on Vercel
       }
-      return { data, isKV: false, warning: !!process.env.VERCEL };
+      return { data, warning: !!process.env.VERCEL };
     }
   } catch (err) {
     console.error('Failed to read local data.json:', err);
   }
 
   // Fallback default
-  const defaultData = {
-    prices: { kanon: 1.80, ketel1: 18.50 },
-    counts: { kanon: 0, ketel1: 0 },
-    ledger: []
-  };
-  return { data: defaultData, isKV: false, warning: !!process.env.VERCEL };
+  return { data: { ...DEFAULT_DATA }, warning: !!process.env.VERCEL };
 }
 
 // Helper to save data with dual-mode storage
@@ -111,33 +109,85 @@ async function saveScoreboardData(data) {
   }
 }
 
-// Recalculates counts and debt from the ledger to ensure consistent state
-function recalculateTotals(data) {
-  const prices = data.prices || { kanon: 1.80, ketel1: 18.50 };
-  const counts = { kanon: 0, ketel1: 0 };
-  let totalDebt = 0;
+function normalizePersonName(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ');
+}
 
-  (data.ledger || []).forEach(tx => {
-    if (tx.type === 'consumption') {
-      const price = prices[tx.drinkType] || 0;
-      // If historical transaction value doesn't exist, calculate it
-      if (tx.value === undefined || tx.value === null) {
-        tx.value = tx.quantity * price;
-      }
-      counts[tx.drinkType] += tx.quantity;
-      totalDebt += tx.value;
-    } else if (tx.type === 'payment') {
-      // Payments should be negative (reducing the debt)
-      if (tx.value > 0) {
-        tx.value = -tx.value;
-      }
-      totalDebt += tx.value;
+function createLedgerEntryId() {
+  return 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+}
+
+function createDefaultPerson(name) {
+  return {
+    name,
+    outstanding: 0,
+    received: 0,
+    taken: 0
+  };
+}
+
+function toSafeQuantity(value) {
+  const quantity = parseInt(value, 10);
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
+}
+
+// Recalculates balances from the ledger to ensure consistent state
+function recalculateTotals(data) {
+  const cleanData = {
+    anytimers: Array.isArray(data.anytimers) ? data.anytimers : [],
+    ledger: Array.isArray(data.ledger) ? data.ledger : []
+  };
+
+  const balances = new Map();
+
+  const chronologicalLedger = [...cleanData.ledger].sort((a, b) => {
+    const timeA = new Date(a.timestamp || 0).getTime();
+    const timeB = new Date(b.timestamp || 0).getTime();
+    if (timeA !== timeB) {
+      return timeA - timeB;
     }
+    return String(a.id || '').localeCompare(String(b.id || ''));
   });
 
-  data.counts = counts;
-  data.totalDebt = totalDebt;
-  return data;
+  chronologicalLedger.forEach(tx => {
+    if (tx.type !== 'any_received' && tx.type !== 'any_taken') {
+      return;
+    }
+
+    const personName = normalizePersonName(tx.personName || tx.person || tx.name);
+    if (!personName) {
+      return;
+    }
+
+    const quantity = toSafeQuantity(tx.quantity) || 1;
+    const existing = balances.get(personName) || createDefaultPerson(personName);
+
+    if (tx.type === 'any_received') {
+      existing.outstanding += quantity;
+      existing.received += quantity;
+    } else {
+      existing.outstanding = Math.max(0, existing.outstanding - quantity);
+      existing.taken += quantity;
+    }
+
+    balances.set(personName, existing);
+    tx.personName = personName;
+    tx.quantity = quantity;
+    tx.balanceAfter = existing.outstanding;
+  });
+
+  const anytimers = Array.from(balances.values()).sort((a, b) => {
+    if (b.outstanding !== a.outstanding) {
+      return b.outstanding - a.outstanding;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  cleanData.anytimers = anytimers;
+  cleanData.ledger = chronologicalLedger;
+  cleanData.totalOutstanding = anytimers.reduce((sum, person) => sum + person.outstanding, 0);
+
+  return cleanData;
 }
 
 // Utility to parse request body if not already parsed
@@ -182,9 +232,8 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
-      prices: cleanData.prices,
-      counts: cleanData.counts,
-      totalDebt: cleanData.totalDebt,
+      anytimers: cleanData.anytimers,
+      totalOutstanding: cleanData.totalOutstanding,
       ledger: cleanData.ledger,
       storageWarning: warning
     }));
@@ -203,57 +252,67 @@ module.exports = async (req, res) => {
       const body = await getRequestBody(req);
       const action = body.action;
 
-      if (action === 'log_consumption') {
-        const { drinkType, quantity, note, admin, timestamp } = body;
-        if (!drinkType || !quantity || !admin) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Missing required parameters' }));
-          return;
-        }
+      if (action === 'log_any_received') {
+        const { personName, quantity, note, admin, timestamp } = body;
+        const normalizedName = normalizePersonName(personName);
+        const safeQuantity = toSafeQuantity(quantity);
 
-        const price = cleanData.prices[drinkType] || 0;
-        const txValue = quantity * price;
-
-        const newTx = {
-          id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-          timestamp: timestamp || new Date().toISOString(),
-          type: 'consumption',
-          drinkType,
-          quantity: parseInt(quantity, 10),
-          value: txValue,
-          admin,
-          note: note || ''
-        };
-
-        cleanData.ledger.push(newTx);
-      } else if (action === 'log_payment') {
-        const { amount, note, admin, timestamp } = body;
-        if (!amount || !admin) {
+        if (!normalizedName || !safeQuantity || !admin) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: 'Missing required parameters' }));
           return;
         }
 
         const newTx = {
-          id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+          id: createLedgerEntryId(),
           timestamp: timestamp || new Date().toISOString(),
-          type: 'payment',
-          drinkType: null,
-          quantity: 0,
-          value: -parseFloat(amount),
+          type: 'any_received',
+          personName: normalizedName,
+          quantity: safeQuantity,
+          change: safeQuantity,
+          balanceAfter: 0,
           admin,
           note: note || ''
         };
 
         cleanData.ledger.push(newTx);
-      } else if (action === 'update_settings') {
-        const { prices } = body;
-        if (!prices || typeof prices.kanon !== 'number' || typeof prices.ketel1 !== 'number') {
+      } else if (action === 'log_any_taken') {
+        const { personName, quantity, note, admin, timestamp } = body;
+        const normalizedName = normalizePersonName(personName);
+        const safeQuantity = toSafeQuantity(quantity);
+
+        if (!normalizedName || !safeQuantity || !admin) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid pricing parameters' }));
+          res.end(JSON.stringify({ error: 'Missing required parameters' }));
           return;
         }
-        cleanData.prices = prices;
+
+        const existingPerson = cleanData.anytimers.find(person => person.name.toLowerCase() === normalizedName.toLowerCase());
+        if (!existingPerson) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `No outstanding anytimers recorded for ${normalizedName}` }));
+          return;
+        }
+
+        if (safeQuantity > existingPerson.outstanding) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `${normalizedName} only has ${existingPerson.outstanding} anytimers remaining` }));
+          return;
+        }
+
+        const newTx = {
+          id: createLedgerEntryId(),
+          timestamp: timestamp || new Date().toISOString(),
+          type: 'any_taken',
+          personName: normalizedName,
+          quantity: safeQuantity,
+          change: -safeQuantity,
+          balanceAfter: Math.max(0, existingPerson.outstanding - safeQuantity),
+          admin,
+          note: note || ''
+        };
+
+        cleanData.ledger.push(newTx);
       } else if (action === 'delete_transaction') {
         const { transactionId } = body;
         if (!transactionId) {
@@ -278,9 +337,8 @@ module.exports = async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
-        prices: finalData.prices,
-        counts: finalData.counts,
-        totalDebt: finalData.totalDebt,
+        anytimers: finalData.anytimers,
+        totalOutstanding: finalData.totalOutstanding,
         ledger: finalData.ledger,
         storage: saveResult.storage
       }));
