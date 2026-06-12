@@ -57,39 +57,39 @@
         <h1 class="hero-title">ANYPENNIE DASHBOARD</h1>
         
         <!-- The Glass Showcase Case -->
-        <div class="glass-showcase-container">
-          <div class="showcase-glow"></div>
-          <div class="glass-showcase">
-            <div class="showcase-glare"></div>
-            <div class="showcase-content">
-              <div class="showcase-item top-item">
-                <img src="assets/kanon.png" alt="Grolsch Kanon Can" class="product-img floating-item-1">
+        <div class="showcase-wrapper"> 
+          <div class="glass-showcase-container">
+            <div class="showcase-glow"></div>
+            <div class="glass-showcase">
+              <div class="showcase-glare"></div>
+              <div class="showcase-content">
+                <div class="showcase-item top-item">
+                  <img src="assets/kanon.png" alt="Grolsch Kanon Can" class="product-img floating-item-1">
+                </div>
+                <div class="showcase-item bottom-item">
+                  <img src="assets/ketel1.png" alt="Ketel 1 Bottle" class="product-img floating-item-2">
+                </div>
               </div>
-              <div class="showcase-item bottom-item">
-                <img src="assets/ketel1.png" alt="Ketel 1 Bottle" class="product-img floating-item-2">
-              </div>
+            </div>
+          </div>
+
+          <div class="card debt-card" id="unopened-debt-section">
+            <h2 class="card-title">TOTAL OUTSTANDING ANY PENNIES</h2>
+            <div class="debt-value-container">
+              <span class="debt-amount" id="anytimers-total">0</span>
+              <span class="anytimers-unit">anys</span>
+            </div>
+            <p class="debt-description">
+              Each card below shows how many anys a person still has to take. The audit committee first logs that an any has been assigned, then records it again when it is actually taken.
+            </p>
+            <div class="anytimer-summary-row">
+              <span class="ledger-summary-pill">People tracked: <strong id="anytimers-count">0</strong></span>
+              <span class="ledger-summary-pill">Ledger entries: <strong id="ledger-count-inline">0</strong></span>
             </div>
           </div>
         </div>
 
-        <!-- Scroll/Explore Trigger Button -->
         <button class="cta-button" id="btn-explore">SEE ALL ANY'S</button>
-
-        <!-- Anytimer Summary -->
-        <div class="card debt-card" id="unopened-debt-section">
-          <h2 class="card-title">TOTAL OUTSTANDING ANY PENNIES</h2>
-          <div class="debt-value-container">
-            <span class="debt-amount" id="anytimers-total">0</span>
-            <span class="anytimers-unit">anys</span>
-          </div>
-          <p class="debt-description">
-            Each card below shows how many anys a person still has to take. The audit committee first logs that an any has been assigned, then records it again when it is actually taken.
-          </p>
-          <div class="anytimer-summary-row">
-            <span class="ledger-summary-pill">People tracked: <strong id="anytimers-count">0</strong></span>
-            <span class="ledger-summary-pill">Ledger entries: <strong id="ledger-count-inline">0</strong></span>
-          </div>
-        </div>
 
         <div class="anytimers-grid" id="anytimers-grid">
           <div class="anytimer-empty">Loading anytimers...</div>
@@ -101,11 +101,11 @@
     <!-- TAB 2: HISTORY (LEDGER) -->
     <section id="tab-history" class="tab-content">
       <div class="section-container">
-        <h1 class="section-title">LEDGER TRANSACTION HISTORY</h1>
+        <h1 class="section-title">ANY PENNIE LEDGER</h1>
         
         <div class="card ledger-card">
           <div class="ledger-header-row">
-            <h3>Audit Trail</h3>
+            <h3>Bookkeeping</h3>
             <div class="ledger-summary-pill">
               Transactions: <span id="ledger-count">0</span>
             </div>
@@ -160,7 +160,7 @@
         <div class="admin-dashboard hidden" id="admin-dashboard">
           
           <div class="admin-welcome-bar">
-            <span>Welcome, <strong>Authorized Auditor</strong></span>
+            <span>Welcome, <strong>Almighty Pennie</strong></span>
             <button class="logout-btn" id="btn-logout">Lock Panel</button>
           </div>
 
@@ -173,8 +173,13 @@
 
               <form id="form-log-any-received">
                 <div class="form-group">
-                  <label for="input-received-person">Person Name</label>
-                  <input type="text" id="input-received-person" placeholder="e.g. Rick" required>
+                  <label for="input-received-person">Person</label>
+                  <div class="select-wrapper">
+                    <select id="input-received-person" required>
+                      <option value="" disabled selected>Select a person…</option>
+                    </select>
+                  </div>
+                  <p class="form-hint hidden" id="received-no-people-hint">No people registered yet. Add someone in the Manage Profile section below first.</p>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -201,8 +206,13 @@
 
               <form id="form-log-any-taken">
                 <div class="form-group">
-                  <label for="input-taken-person">Person Name</label>
-                  <input type="text" id="input-taken-person" placeholder="e.g. Rick" required>
+                  <label for="input-taken-person">Person</label>
+                  <div class="select-wrapper">
+                    <select id="input-taken-person" required>
+                      <option value="" disabled selected>Select a person…</option>
+                    </select>
+                  </div>
+                  <p class="form-hint hidden" id="taken-no-people-hint">No one currently has outstanding anys. Log an "Any Received" first.</p>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -222,11 +232,70 @@
               </form>
             </div>
 
+            <!-- Manage Profile -->
+            <div class="card admin-control-card">
+              <h3>Manage Profile</h3>
+              <p>Add a profile picture, role, and fun fact for a person. Select an existing name to edit it, or type a new name to create one.</p>
+
+              <form id="form-update-profile">
+                <div class="form-group">
+                  <label for="profile-person-select">Select Person</label>
+                  <div class="select-wrapper">
+                    <select id="profile-person-select">
+                      <option value="">+ New person</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="input-profile-name">Person Name</label>
+                  <input type="text" id="input-profile-name" placeholder="e.g. Rick">
+                </div>
+                <div class="form-group">
+                  <label for="input-profile-image">Image URL</label>
+                  <input type="url" id="input-profile-image" placeholder="https://example.com/photo.jpg">
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="input-profile-role">Role</label>
+                    <input type="text" id="input-profile-role" placeholder="e.g. Treasurer">
+                  </div>
+                  <div class="form-group">
+                    <label for="input-profile-board">Board #</label>
+                    <input type="text" id="input-profile-board" placeholder="e.g. 34">
+                  </div>
+                  <div class="form-group">
+                    <label for="input-profile-funfact">Fun Fact</label>
+                    <input type="text" id="input-profile-funfact" placeholder="e.g. Once finished 5 anys in one night">
+                  </div>
+                </div>
+                <div id="profile-success-msg" class="success-msg hidden">Profile saved!</div>
+                <button type="submit" class="cta-button secondary-btn">Save Profile</button>
+              </form>
+            </div>
+
             <div class="card admin-control-card settings-card">
               <h3>Danger Zone</h3>
-              <p>Purge the audit trail and reset all outstanding any balances.</p>
-              <div class="danger-zone-actions">
-                <button class="danger-btn" id="btn-clear-ledger">Purge Entire Ledger</button>
+              <p>Permanently delete a specific person, or purge the entire audit trail.</p>
+              
+              <div class="danger-zone-actions" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <form id="form-purge-person" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                  <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                    <label for="purge-person-select">Purge Specific Person</label>
+                    <div class="select-wrapper">
+                      <select id="purge-person-select" required>
+                        <option value="" disabled selected>Select a person to delete…</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button type="submit" class="danger-btn">Delete Person</button>
+                </form>
+
+                <hr class="card-divider" style="margin: 0;">
+
+                <div>
+                  <button class="danger-btn" id="btn-clear-ledger">Purge Entire Ledger</button>
+                </div>
               </div>
             </div>
 
