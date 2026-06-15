@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Any Pennie</title>
-  <meta name="description" content="Official anytimer tracker for the study association treasurer. Log who received an any and when it is taken.">
-  
+  <meta name="description"
+    content="Official anytimer tracker for the study association treasurer. Log who received an any and when it is taken.">
+
   <!-- Google Fonts: Bebas Neue (for headers) and Inter (for body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <!-- Background Pattern -->
@@ -32,7 +37,7 @@
         <ul class="nav-links">
           <li><a href="#scoreboard" class="nav-link active" id="nav-scoreboard">DASHBOARD</a></li>
           <li><a href="#history" class="nav-link" id="nav-history">HISTORY</a></li>
-           <li><a href="#log-consumption" class="nav-link" id="nav-log-consumption">LOG ANYTIMERS</a></li>
+          <li><a href="#log-consumption" class="nav-link" id="nav-log-consumption">LOG ANYTIMERS</a></li>
           <li><a href="#rules" class="nav-link" id="nav-rules">RULES</a></li>
           <li><a href="#about" class="nav-link" id="nav-about">ABOUT</a></li>
         </ul>
@@ -47,7 +52,9 @@
     <div id="storage-warning" class="warning-banner hidden">
       <div class="warning-content">
         <span class="warning-icon">⚠️</span>
-        <span class="warning-text"><strong>Running in temporary storage mode:</strong> Vercel KV is not configured. Any changes will be lost when the serverless function restarts. Configure <code>KV_REST_API_URL</code> to enable persistent database storage.</span>
+        <span class="warning-text"><strong>Running in temporary storage mode:</strong> Vercel KV is not configured. Any
+          changes will be lost when the serverless function restarts. Configure <code>KV_REST_API_URL</code> to enable
+          persistent database storage.</span>
       </div>
     </div>
 
@@ -55,9 +62,9 @@
     <section id="tab-scoreboard" class="tab-content active">
       <div class="hero-section">
         <h1 class="hero-title">ANYPENNIE DASHBOARD</h1>
-        
+
         <!-- The Glass Showcase Case -->
-        <div class="showcase-wrapper"> 
+        <div class="showcase-wrapper">
           <div class="glass-showcase-container">
             <div class="showcase-glow"></div>
             <div class="glass-showcase">
@@ -80,7 +87,8 @@
               <span class="anytimers-unit">anys</span>
             </div>
             <p class="debt-description">
-              Each card below shows how many anys a person still has to take. The audit committee first logs that an any has been assigned, then records it again when it is actually taken.
+              Each card below shows how many anys a person still has to take. A Treasurer first logs that an any
+              has been assigned, then records it again when it is actually taken.
             </p>
             <div class="anytimer-summary-row">
               <span class="ledger-summary-pill">People tracked: <strong id="anytimers-count">0</strong></span>
@@ -102,7 +110,7 @@
     <section id="tab-history" class="tab-content">
       <div class="section-container">
         <h1 class="section-title">ANY PENNIE LEDGER</h1>
-        
+
         <div class="card ledger-card">
           <div class="ledger-header-row">
             <h3>Bookkeeping</h3>
@@ -110,7 +118,7 @@
               Transactions: <span id="ledger-count">0</span>
             </div>
           </div>
-          
+
           <div class="table-responsive">
             <table class="ledger-table">
               <thead>
@@ -149,7 +157,8 @@
           <form id="login-form">
             <div class="form-group">
               <label for="admin-password">Shared Secret Key</label>
-              <input type="password" id="admin-password" placeholder="••••••••" required autocomplete="current-password">
+              <input type="password" id="admin-password" placeholder="••••••••" required
+                autocomplete="current-password">
             </div>
             <div id="login-error" class="error-msg hidden">Invalid credentials. Please try again.</div>
             <button type="submit" class="cta-button primary-btn">UNLOCK LEDGER</button>
@@ -158,14 +167,14 @@
 
         <!-- Admin Controls Dashboard -->
         <div class="admin-dashboard hidden" id="admin-dashboard">
-          
+
           <div class="admin-welcome-bar">
             <span>Welcome, <strong>Almighty Pennie</strong></span>
             <button class="logout-btn" id="btn-logout">Lock Panel</button>
           </div>
 
           <div class="grid-admin-cards">
-            
+
             <!-- Log Any Received -->
             <div class="card admin-control-card">
               <h3>Log Any Received</h3>
@@ -179,7 +188,8 @@
                       <option value="" disabled selected>Select a person…</option>
                     </select>
                   </div>
-                  <p class="form-hint hidden" id="received-no-people-hint">No people registered yet. Add someone in the Manage Profile section below first.</p>
+                  <p class="form-hint hidden" id="received-no-people-hint">No people registered yet. Add someone in the
+                    Manage Profile section below first.</p>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -193,7 +203,8 @@
                 </div>
                 <div class="form-group">
                   <label for="input-received-note">Note / Reason</label>
-                  <input type="text" id="input-received-note" placeholder="e.g. Idiot Treasurer forgot to close pin terminal" required>
+                  <input type="text" id="input-received-note"
+                    placeholder="e.g. Idiot Treasurer forgot to close pin terminal" required>
                 </div>
                 <button type="submit" class="cta-button">Log Any Received</button>
               </form>
@@ -212,7 +223,8 @@
                       <option value="" disabled selected>Select a person…</option>
                     </select>
                   </div>
-                  <p class="form-hint hidden" id="taken-no-people-hint">No one currently has outstanding anys. Log an "Any Received" first.</p>
+                  <p class="form-hint hidden" id="taken-no-people-hint">No one currently has outstanding anys. Log an
+                    "Any Received" first.</p>
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -235,7 +247,8 @@
             <!-- Manage Profile -->
             <div class="card admin-control-card">
               <h3>Manage Profile</h3>
-              <p>Add a profile picture, role, and fun fact for a person. Select an existing name to edit it, or type a new name to create one.</p>
+              <p>Add a profile picture, role, and fun fact for a person. Select an existing name to edit it, or type a
+                new name to create one.</p>
 
               <form id="form-update-profile">
                 <div class="form-group">
@@ -263,10 +276,10 @@
                     <label for="input-profile-board">Board #</label>
                     <input type="text" id="input-profile-board" placeholder="e.g. 34">
                   </div>
-                  <div class="form-group">
-                    <label for="input-profile-funfact">Fun Fact</label>
-                    <input type="text" id="input-profile-funfact" placeholder="e.g. Once finished 5 anys in one night">
-                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="input-profile-funfact">Fun Fact</label>
+                  <input type="text" id="input-profile-funfact" placeholder="e.g. Once finished 5 anys in one night">
                 </div>
                 <div id="profile-success-msg" class="success-msg hidden">Profile saved!</div>
                 <button type="submit" class="cta-button secondary-btn">Save Profile</button>
@@ -276,9 +289,9 @@
             <div class="card admin-control-card settings-card">
               <h3>Danger Zone</h3>
               <p>Permanently delete a specific person, or purge the entire audit trail.</p>
-              
+
               <div class="danger-zone-actions" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                
+
                 <form id="form-purge-person" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
                   <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
                     <label for="purge-person-select">Purge Specific Person</label>
@@ -308,31 +321,54 @@
     <!-- TAB 4: RULES -->
     <section id="tab-rules" class="tab-content">
       <div class="section-container">
+        <h1 class="section-title">DEFINITION OF AN ANY PENNIE</h1>
+        <div class="card definition-card">
+          <p>
+            An <strong>Any Pennie</strong> (commonly referred to as an "Any") is formally defined as a binding
+            obligation requiring the sequential and uninterrupted consumption of the following items:
+          </p>
+          <ul class="definition-list">
+            <li><strong>Primary Consumption:</strong> The complete consumption of one (1) 0.5L can of Grolsch Kanon
+              (11.6% ABV).</li>
+            <li><strong>Subsequent Consumption:</strong> Immediately following the primary consumption, the consumption
+              of one (1) traditional borrel (not a shot!) of Ketel 1 ambachtelijke jonge graanjenever (35% ABV).</li>
+          </ul>
+          <p style="font-style: italic; color: var(--text-secondary); line-height: 1.5;">
+            Note: Both conditions must be fulfilled in this exact chronological order within a proper timeframe. Failure
+            to comply invalidates the
+            redemption, and the outstanding balance remains unchanged in the official Treasury record.
+          </p>
+        </div>
+
         <h1 class="section-title">THE LAWS OF THE TREASURY</h1>
-        
+
         <div class="rules-grid">
           <div class="card rule-card">
             <div class="rule-num">01</div>
-              <h3>The Assignment Clause</h3>
-              <p>Whenever the audit committee receives an any on someone, it must be logged against that person's name before the ledger is considered complete.</p>
+            <h3>The Assignment Clause</h3>
+            <p>Whenever a Treasurer receives an any on someone, it must be logged against that person's name
+              before the ledger is considered complete.</p>
           </div>
 
           <div class="card rule-card">
             <div class="rule-num">02</div>
-              <h3>The Redemption Clause</h3>
-              <p>When a person takes an any, the committee records the action immediately so the remaining count stays accurate.</p>
+            <h3>The Redemption Clause</h3>
+            <p>When a person takes an any, the committee records the action immediately so the remaining count stays
+              accurate.</p>
           </div>
 
           <div class="card rule-card">
             <div class="rule-num">03</div>
-              <h3>Auditor Immunity</h3>
-              <p>Only designated auditors can add or close an anytimer entry. The person owed the any does not self-approve their own balance.</p>
+            <h3>Auditor Immunity</h3>
+            <p>Only designated auditors can add or close an anytimer entry. The person owed the any does not
+              self-approve their own balance.</p>
           </div>
 
           <div class="card rule-card">
             <div class="rule-num">04</div>
-              <h3>The Sovereign Balance</h3>
-              <p>The dashboard is always driven by the remaining any count per person. The audit trail is the source of truth, and the cards are only the current summary.</p>
+            <h3>The Sovereign Balance</h3>
+            <p>The dashboard is always driven by the remaining any count per person. The audit trail is the source of
+              truth, and the cards are only the current summary.</p>
           </div>
         </div>
       </div>
@@ -342,25 +378,30 @@
     <section id="tab-about" class="tab-content">
       <div class="section-container about-section">
         <h1 class="section-title">ABOUT THE SCOREBOARD</h1>
-        
+
         <div class="card about-card">
-            <h2>Thalia's Treasurer's Anytimer Scoreboard</h2>
-            <p>
-              This system was custom-built by and for Thalia's KasCo as an open, auditable record of who still has anys left to take. It keeps a person-by-person balance and an immutable audit trail for each assignment and redemption.
+          <h2>Thalia's Treasurer's Anytimer Scoreboard</h2>
+          <p>
+            This system was custom-built by and for Thalia's (old) Treasurers, and serves as an auditable record of who
+            still has anys left to take. It keeps a person-by-person balance and an immutable audit trail for each
+            assignment and redemption.
           </p>
           <div class="brand-showcase-logos">
             <div class="brand-logo-card">
               <h4>Any Received</h4>
-              <p>The KasCo logs that someone has been assigned one or more anys. They will then update the scoreboard.</p>
+              <p>A Treasurer logs that someone has been assigned one or more anys. They will then update the scoreboard.
+              </p>
             </div>
             <div class="brand-logo-card">
               <h4>Any Taken</h4>
-              <p>The KasCo logs when the owed any is properly fulfilled. The any should be logged as soon as it's taken.</p>
+              <p>A Treasurer logs when the owed any is properly fulfilled. The any should be logged as soon as it's
+                taken.</p>
             </div>
           </div>
           <hr class="card-divider">
           <h3>Technical Stack</h3>
-          <p>Built with native HTML5, CSS3, and JavaScript, powered by Vercel Serverless API functions and Vercel KV for global state management. Secures edits via HMAC SHA-256 session signatures.</p>
+          <p>Built with native HTML5, CSS3, and JavaScript, powered by Vercel Serverless API functions and Vercel KV for
+            global state management. Secures edits via HMAC SHA-256 session signatures.</p>
         </div>
       </div>
     </section>
@@ -370,10 +411,11 @@
   <!-- Footer -->
   <footer>
     <div class="footer-container">
-      <p class="copyright">COPYRIGHT 2026 &copy; THALIA'S KASCO</p>
+      <p class="copyright">COPYRIGHT 2026 &copy; THALIA'S TREASURY</p>
     </div>
   </footer>
 
   <script src="app.js"></script>
 </body>
+
 </html>

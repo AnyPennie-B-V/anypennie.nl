@@ -6,20 +6,20 @@
   --card-bg: rgba(20, 29, 18, 0.65);
   --card-border: #9b677c;
   --card-border-focus: #E62272;
-  
+
   --gold-color: #E62272;
   --gold-hover: #E62272;
-  --crimson-color: #c91a32;
-  --crimson-hover: #e6223b;
+  --crimson-color: #d8a0b7;
+  --crimson-hover: #E62272;
   --text-primary: #f5f6fa;
   --text-secondary: #a0a5c0;
-  
+
   --glass-glow: #E62272;
   --red-glow: rgba(201, 26, 50, 0.3);
-  
-  --btn-gradient: linear-gradient(135deg, #E62272 0%, #c91a32 100%);
-  --btn-gradient-hover: linear-gradient(135deg, #eed8a1 0%, #e6223b 100%);
-  
+
+  --btn-gradient: linear-gradient(135deg, #E62272 0%, #de5890 100%);
+  --btn-gradient-hover: linear-gradient(135deg, #d45188 0%, #d96b99 100%);
+
   --font-display: 'Bebas Neue', sans-serif;
   --font-body: 'Inter', sans-serif;
 }
@@ -30,7 +30,8 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   min-height: 100vh;
   font-family: var(--font-body);
@@ -172,8 +173,15 @@ nav .nav-link.active::after {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Warning Banner */
@@ -294,7 +302,7 @@ nav .nav-link.active::after {
   left: 10%;
   width: 80%;
   height: 80%;
-  background: radial-gradient(circle, var(--glass-glow) 0%, var(--red-glow) 50%, rgba(0,0,0,0) 80%);
+  background: radial-gradient(circle, var(--glass-glow) 0%, var(--red-glow) 50%, rgba(0, 0, 0, 0) 80%);
   filter: blur(25px);
   z-index: 1;
 }
@@ -307,7 +315,7 @@ nav .nav-link.active::after {
   height: 100%;
   background: rgba(255, 255, 255, 0.02);
   border: 2px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 
+  box-shadow:
     inset 0 0 20px rgba(255, 255, 255, 0.05),
     0 15px 35px rgba(0, 0, 0, 0.6);
   z-index: 2;
@@ -315,7 +323,8 @@ nav .nav-link.active::after {
 }
 
 /* 3D Isometric Wireframe lines representing depth */
-.glass-showcase-container::before, .glass-showcase-container::after {
+.glass-showcase-container::before,
+.glass-showcase-container::after {
   content: '';
   position: absolute;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -378,15 +387,31 @@ nav .nav-link.active::after {
 }
 
 @keyframes floatCan {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(1deg); }
-  100% { transform: translateY(0) rotate(0deg); }
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
 }
 
 @keyframes floatBottle {
-  0% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-8px) rotate(-1deg); }
-  100% { transform: translateY(0) rotate(0deg); }
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-8px) rotate(-1deg);
+  }
+
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
 }
 
 /* Button & CTAs */
@@ -502,9 +527,9 @@ nav .nav-link.active::after {
 
 .anytimer-avatar-wrap {
   position: relative;
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
+  width: 80px;
+  height: 80px;
+  min-width: 64px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
@@ -519,7 +544,7 @@ nav .nav-link.active::after {
   align-items: center;
   justify-content: center;
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 1.4rem;
   letter-spacing: 0.5px;
   color: var(--gold-color);
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.18), rgba(201, 26, 50, 0.12));
@@ -696,7 +721,7 @@ nav .nav-link.active::after {
   line-height: 1;
   color: var(--text-primary);
   margin-bottom: 0.4rem;
-  text-shadow: 0 0 10px rgba(255,255,255,0.1);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
 }
 
 .stat-sub {
@@ -753,7 +778,8 @@ nav .nav-link.active::after {
   font-size: 0.9rem;
 }
 
-.ledger-table th, .ledger-table td {
+.ledger-table th,
+.ledger-table td {
   padding: 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -869,7 +895,8 @@ nav .nav-link.active::after {
   letter-spacing: 0.5px;
 }
 
-.form-group input, .form-group select {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 0.8rem 1rem;
   background: rgba(255, 255, 255, 0.03);
@@ -881,7 +908,8 @@ nav .nav-link.active::after {
   transition: all 0.3s ease;
 }
 
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: var(--gold-color);
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
@@ -1037,9 +1065,9 @@ nav .nav-link.active::after {
   .grid-admin-cards {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   /* Make the configuration/settings card span full width in 2-col layout */
-  .grid-admin-cards > .settings-card {
+  .grid-admin-cards>.settings-card {
     grid-column: span 2;
   }
 }
@@ -1158,6 +1186,27 @@ nav .nav-link.active::after {
 /* ==========================================================================
    TAB 4: RULES
    ========================================================================== */
+.definition-card {
+  margin-bottom: 3rem;
+  text-align: left;
+}
+
+.definition-list {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+  list-style-type: square;
+}
+
+.definition-list li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.definition-list li strong {
+  color: var(--gold-color);
+}
+
 .rules-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1309,29 +1358,29 @@ footer {
     gap: 1rem;
     padding: 1rem;
   }
-  
+
   nav .nav-links {
     gap: 1rem;
   }
-  
+
   nav .nav-link {
     font-size: 1rem;
   }
-  
+
   .hero-title {
     font-size: 2.2rem;
     margin-bottom: 1.5rem;
   }
-  
+
   .grid-stats {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   .stat-value {
     font-size: 3.5rem;
   }
-  
+
   .main-content {
     padding: 1.5rem 1rem 4rem 1rem;
   }
@@ -1340,9 +1389,11 @@ footer {
 .showcase-wrapper {
   display: flex;
   flex-direction: row;
-  align-items: center;    /* Centers them vertically relative to each other */
+  align-items: center;
+  /* Centers them vertically relative to each other */
   justify-content: center;
-  gap: 3rem;              /* Adds breathing room between the image and the card */
+  gap: 3rem;
+  /* Adds breathing room between the image and the card */
   width: 100%;
   max-width: 1100px;
   margin-bottom: 2rem;
@@ -1351,8 +1402,10 @@ footer {
 /* Adjust the debt card so it shares the space nicely */
 .debt-card {
   width: 100%;
-  flex: 1;                /* Allows the card to fill the remaining horizontal space */
+  flex: 1;
+  /* Allows the card to fill the remaining horizontal space */
   max-width: 840px;
-  margin-bottom: 0;       /* Removed the bottom margin since the wrapper handles spacing */
+  margin-bottom: 0;
+  /* Removed the bottom margin since the wrapper handles spacing */
   text-align: center;
 }

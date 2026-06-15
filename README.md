@@ -1,16 +1,30 @@
-# 🍾 Treasurer's Bottle Scoreboard
+# 🍾 Any Pennie Scoreboard & Ledger
 
-A scoreboard and ledger system designed for tracking study association beverage consumption (specifically **Grolsch Kanon** and **Ketel 1**) and debt management. It includes a password-protected admin portal to log consumption, record payments, manage pricing, and view/delete transaction logs.
+An interactive dashboard, scoreboard, and ledger system designed for tracking **Anytimers** (Any Pennies) for study association treasurers. It provides a shared, transparent, and auditable record of who still has anys left to take.
 
-The project features a sleek dark-mode user interface with custom SVG visualizations and real-time ledger updates.
+The project features a sleek, premium dark-mode user interface with glassmorphism visual elements, custom 3D isometric showcase boxes, and real-time ledger updates.
+
+---
+
+## 📖 Definition of an Any Pennie
+
+An **Any Pennie** (commonly referred to as an "Any") is formally defined as a binding obligation requiring the sequential and uninterrupted consumption of the following:
+1. **Primary Consumption**: The complete consumption of one (1) 0.5L can of Grolsch Kanon (11.6% ABV).
+2. **Subsequent Consumption**: Immediately following the primary consumption, the consumption of one (1) traditional borrel of Ketel 1 ambachtelijke jonge graanjenever (35% ABV).
+
+Failure to comply with both conditions in this exact chronological order invalidates the redemption, keeping the outstanding balance unchanged in the official Ledger.
 
 ---
 
 ## 🚀 Features
 
-- **Beverage Tracking**: Track total consumption counts and prices for Grolsch Kanon and Ketel 1.
-- **Admin Portal**: Password-protected actions including logging drinks, registering payments, updating prices, and deleting/clearing the transaction history.
-- **Ledger System**: A transparent, chronological log of all consumption and payments.
+- **Dashboard / Scoreboard**: A real-time grid of all tracked individuals showing their outstanding Any Pennie balance, custom avatar, role, and a fun fact.
+- **Ledger System**: A transparent, chronological log of all Any Pennie activities showing dates, quantities, remaining balances, auditor names, and notes.
+- **Admin Portal**: Password-protected workspace for Treasurers to:
+  - **Log Any Received**: Record when an Any has been assigned to a person.
+  - **Log Any Taken**: Fulfill outstanding Any Pennies.
+  - **Manage Profiles**: Register new people or update their name, role, board number, profile image URL, and fun facts.
+  - **Danger Zone**: Purge a specific person's profile and transactions, or clear the entire ledger history.
 - **Dual-Mode Persistence**:
   - **Local Development**: Persistent storage via a local `data.json` file.
   - **Production (Vercel)**: Automatically switches to **Vercel KV** (Redis) with a fallback to memory to support serverless environments.
