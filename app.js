@@ -12,6 +12,26 @@ const STATE = {
 const API_BASE = '/api';
 
 // ==========================================================================
+// SMALL UTILITIES
+// ==========================================================================
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+function getInitials(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+// ==========================================================================
 // INITIALIZATION & ROUTING
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -88,6 +108,8 @@ async function fetchData() {
     renderDashboard();
     renderAnytimers();
     renderLedger();
+    populateProfileSelect();
+    populatePersonSelects();
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -110,6 +132,19 @@ function renderDashboard() {
   }
 }
 
+function getOrdinalSuffix(numberStr) {
+  const n = parseInt(numberStr, 10);
+  if (isNaN(n)) return numberStr;
+
+  const j = n % 10;
+  const k = n % 100;
+  
+  if (j === 1 && k !== 11) return n + "st";
+  if (j === 2 && k !== 12) return n + "nd";
+  if (j === 3 && k !== 13) return n + "rd";
+  return n + "th";
+}
+
 function renderAnytimers() {
   const grid = document.getElementById('anytimers-grid');
   if (!grid) return;
@@ -127,10 +162,32 @@ function renderAnytimers() {
 
     const statusClass = person.outstanding > 0 ? 'has-outstanding' : 'is-cleared';
 
+    const avatarHtml = `
+      <div class="anytimer-avatar-wrap">
+        <div class="anytimer-avatar-placeholder">${escapeHtml(getInitials(person.name))}</div>
+        ${person.imageUrl ? `<img class="anytimer-avatar-img" src="${escapeHtml(person.imageUrl)}" alt="${escapeHtml(person.name)}" onerror="this.style.display='none'">` : ''}
+      </div>
+    `;
+
+    // Automatically make everyone a Treasurer, adding the prefix if a board number exists
+    let combinedRoleText = "Treasurer";
+    if (person.boardNumber) {
+      combinedRoleText = `${getOrdinalSuffix(person.boardNumber)} Treasurer`;
+    }
+
+    const roleHTML = `<div class="anytimer-role">(${escapeHtml(person.role)})</div>`;
+    const combinedRoleHtml = `<div class="anytimer-role">${escapeHtml(combinedRoleText)}</div>`;
+    const funFactHtml = person.funFact ? `<div class="anytimer-funfact">“${escapeHtml(person.funFact)}”</div>` : '';
+
     card.innerHTML = `
       <div class="anytimer-card-top">
-        <div>
-          <div class="anytimer-name">${person.name}</div>
+        ${avatarHtml}
+        <div class="anytimer-info">
+          <div class="anytimer-name-role-wrap">
+            <div class="anytimer-name">${escapeHtml(person.name)}</div>
+            ${roleHTML}
+          </div>
+          ${combinedRoleHtml}
           <div class="anytimer-meta">${person.taken} taken · ${person.received} received</div>
         </div>
         <span class="anytimer-status ${statusClass}">${person.outstanding > 0 ? 'OWED' : 'CLEARED'}</span>
@@ -139,6 +196,7 @@ function renderAnytimers() {
         <span class="anytimer-count">${person.outstanding}</span>
         <span class="anytimer-count-label">anys remaining</span>
       </div>
+      ${funFactHtml}
     `;
 
     grid.appendChild(card);
@@ -174,7 +232,9 @@ function renderLedger() {
         ? 'Any taken'
         : tx.type;
     const typeBadge = `<span class="type-badge ${tx.type}">${typeLabel}</span>`;
-    const personName = tx.personName || tx.person || '—';
+    const personName = escapeHtml(tx.personName || tx.person || '—');
+    const adminName = escapeHtml(tx.admin || '—');
+    const noteText = escapeHtml(tx.note || '—');
     const qtyText = Number.isFinite(Number(tx.quantity)) ? tx.quantity : '—';
     const balanceText = Number.isFinite(Number(tx.balanceAfter)) ? tx.balanceAfter : '—';
 
@@ -190,8 +250,8 @@ function renderLedger() {
       <td>${personName}</td>
       <td>${qtyText}</td>
       <td>${balanceText}</td>
-      <td>${tx.admin}</td>
-      <td><span style="color:var(--text-secondary); font-style: italic;">${tx.note || '—'}</span></td>
+      <td>${adminName}</td>
+      <td><span style="color:var(--text-secondary); font-style: italic;">${noteText}</span></td>
       ${deleteAction}
     `;
 
@@ -279,11 +339,28 @@ function setupEventListeners() {
     takenForm.addEventListener('submit', handleLogAnyTaken);
   }
 
+  // Profile Management
+  const profileForm = document.getElementById('form-update-profile');
+  if (profileForm) {
+    profileForm.addEventListener('submit', handleUpdateProfile);
+  }
+
+  const profileSelect = document.getElementById('profile-person-select');
+  if (profileSelect) {
+    profileSelect.addEventListener('change', handleProfilePersonSelect);
+  }
+
   // Admin Actions: Clear Ledger Purge
   const clearButton = document.getElementById('btn-clear-ledger');
   if (clearButton) {
     clearButton.addEventListener('click', handleClearLedger);
   }
+
+  const purgePersonForm = document.getElementById('form-purge-person');
+  if (purgePersonForm) {
+    purgePersonForm.addEventListener('submit', handlePurgePerson);
+  }
+
 }
 
 async function handleLogin(e) {
@@ -366,6 +443,157 @@ async function handleLogAnyTaken(e) {
   }
 }
 
+// ==========================================================================
+// PERSON DROPDOWNS (Log Any Received / Log Any Taken)
+// ==========================================================================
+function populatePersonSelects() {
+  const receivedSelect = document.getElementById('input-received-person');
+  const takenSelect = document.getElementById('input-taken-person');
+  const receivedHint = document.getElementById('received-no-people-hint');
+  const takenHint = document.getElementById('taken-no-people-hint');
+
+  if (receivedSelect) {
+    const current = receivedSelect.value;
+    receivedSelect.innerHTML = '<option value="" disabled selected>Select a person…</option>';
+
+    STATE.anytimers.forEach(person => {
+      const opt = document.createElement('option');
+      opt.value = person.name;
+      opt.textContent = person.name;
+      receivedSelect.appendChild(opt);
+    });
+
+    if (current && STATE.anytimers.some(p => p.name === current)) {
+      receivedSelect.value = current;
+    }
+  }
+
+  const purgeSelect = document.getElementById('purge-person-select');
+  if (purgeSelect) {
+    const current = purgeSelect.value;
+    purgeSelect.innerHTML = '<option value="" disabled selected>Select a person to delete…</option>';
+    
+    STATE.anytimers.forEach(person => {
+      const opt = document.createElement('option');
+      opt.value = person.name;
+      opt.textContent = person.name;
+      purgeSelect.appendChild(opt);
+    });
+
+    if (current && STATE.anytimers.some(p => p.name === current)) {
+      purgeSelect.value = current;
+    }
+  }
+
+  if (receivedHint) {
+    receivedHint.classList.toggle('hidden', STATE.anytimers.length > 0);
+  }
+
+  if (takenSelect) {
+    const current = takenSelect.value;
+    takenSelect.innerHTML = '<option value="" disabled selected>Select a person…</option>';
+
+    const eligible = STATE.anytimers.filter(person => person.outstanding > 0);
+    eligible.forEach(person => {
+      const opt = document.createElement('option');
+      opt.value = person.name;
+      opt.textContent = `${person.name} (${person.outstanding} owed)`;
+      takenSelect.appendChild(opt);
+    });
+
+    if (current && eligible.some(p => p.name === current)) {
+      takenSelect.value = current;
+    }
+
+    if (takenHint) {
+      takenHint.classList.toggle('hidden', eligible.length > 0);
+    }
+  }
+
+}
+
+// ==========================================================================
+// PROFILE MANAGEMENT (Image, Role, Fun Fact)
+// ==========================================================================
+function populateProfileSelect() {
+  const select = document.getElementById('profile-person-select');
+  if (!select) return;
+
+  const currentValue = select.value;
+  select.innerHTML = '<option value="">+ New person</option>';
+
+  STATE.anytimers.forEach(person => {
+    const opt = document.createElement('option');
+    opt.value = person.name;
+    opt.textContent = person.name;
+    select.appendChild(opt);
+  });
+
+  if (currentValue && STATE.anytimers.some(p => p.name === currentValue)) {
+    select.value = currentValue;
+  }
+}
+
+function handleProfilePersonSelect() {
+  const select = document.getElementById('profile-person-select');
+  const nameInput = document.getElementById('input-profile-name');
+  const imageInput = document.getElementById('input-profile-image');
+  const roleInput = document.getElementById('input-profile-role');
+  const boardInput = document.getElementById('input-profile-board');
+  const funFactInput = document.getElementById('input-profile-funfact');
+
+  const selectedName = select.value;
+
+  if (!selectedName) {
+    nameInput.value = '';
+    nameInput.disabled = false;
+    imageInput.value = '';
+    roleInput.value = '';
+    if (boardInput) {
+      boardInput.value = '';
+    }
+    funFactInput.value = '';
+    return;
+  }
+
+  const person = STATE.anytimers.find(p => p.name === selectedName);
+  nameInput.value = selectedName;
+  nameInput.disabled = true;
+  imageInput.value = person?.imageUrl || '';
+  roleInput.value = person?.role || '';
+  if(boardInput) boardInput.value = person?.boardNumber || '';
+  funFactInput.value = person?.funFact || '';
+}
+
+async function handleUpdateProfile(e) {
+  e.preventDefault();
+
+  const select = document.getElementById('profile-person-select');
+  const nameInput = document.getElementById('input-profile-name');
+  const successMsg = document.getElementById('profile-success-msg');
+
+  const personName = (select.value || nameInput.value).trim();
+  if (!personName) {
+    alert('Please select an existing person, or type a name to create a new profile.');
+    return;
+  }
+
+  const payload = {
+    action: 'update_profile',
+    personName,
+    imageUrl: document.getElementById('input-profile-image').value.trim(),
+    role: document.getElementById('input-profile-role').value.trim(),
+    boardNumber: document.getElementById('input-profile-board') ? document.getElementById('input-profile-board').value.trim() : '',
+    funFact: document.getElementById('input-profile-funfact').value.trim()
+  };
+
+  const success = await sendAdminAction(payload);
+  if (success && successMsg) {
+    successMsg.classList.remove('hidden');
+    setTimeout(() => successMsg.classList.add('hidden'), 2500);
+  }
+}
+
 async function handleDeleteTransaction(e) {
   const transactionId = e.currentTarget.getAttribute('data-id');
   if (!transactionId) return;
@@ -385,6 +613,25 @@ async function handleClearLedger() {
       action: 'clear_ledger'
     };
     await sendAdminAction(payload);
+  }
+}
+
+async function handlePurgePerson(e) {
+  e.preventDefault();
+  const select = document.getElementById('purge-person-select');
+  const personName = select.value;
+
+  if (!personName) return;
+
+  if (confirm(`⚠️ WARNING: Are you sure you want to permanently delete ${personName}? This will wipe their profile and remove all their transactions from the ledger.`)) {
+    const payload = {
+      action: 'delete_person',
+      personName: personName
+    };
+    const success = await sendAdminAction(payload);
+    if (success) {
+      select.value = ''; // Reset the dropdown on success
+    }
   }
 }
 
@@ -420,7 +667,9 @@ async function sendAdminAction(payload) {
     renderDashboard();
     renderAnytimers();
     renderLedger();
-    
+    populateProfileSelect();
+    populatePersonSelects();
+
     return true;
   } catch (error) {
     alert('Admin Error: ' + error.message);

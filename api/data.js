@@ -126,7 +126,11 @@ function createDefaultPerson(name) {
     name,
     outstanding: 0,
     received: 0,
-    taken: 0
+    taken: 0,
+    imageUrl: '',
+    role: '',
+    boardNumber: '',
+    funFact: ''
   };
 }
 
@@ -135,12 +139,34 @@ function toSafeQuantity(value) {
   return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
 }
 
+// Trims and caps the length of a free-text profile field
+function sanitizeProfileText(value, maxLength) {
+  return String(value || '').trim().slice(0, maxLength);
+}
+
 // Recalculates balances from the ledger to ensure consistent state
 function recalculateTotals(data) {
   const cleanData = {
     anytimers: Array.isArray(data.anytimers) ? data.anytimers : [],
     ledger: Array.isArray(data.ledger) ? data.ledger : []
   };
+
+  // Profile info (image, role, fun fact) is NOT derived from the ledger, so
+  // preserve it separately, keyed by normalized name. Balances are always
+  // rebuilt from scratch below.
+  const profiles = new Map();
+  cleanData.anytimers.forEach(person => {
+    const name = normalizePersonName(person.name);
+    if (!name) {
+      return;
+    }
+    profiles.set(name, {
+      imageUrl: sanitizeProfileText(person.imageUrl, 500),
+      role: sanitizeProfileText(person.role, 60),
+      boardNumber: sanitizeProfileText(person.boardNumber, 34),
+      funFact: sanitizeProfileText(person.funFact, 200)
+    });
+  });
 
   const balances = new Map();
 
@@ -178,6 +204,22 @@ function recalculateTotals(data) {
     tx.personName = personName;
     tx.quantity = quantity;
     tx.balanceAfter = existing.outstanding;
+  });
+
+  // People with a saved profile but no ledger activity yet should still show up
+  profiles.forEach((profile, name) => {
+    if (!balances.has(name)) {
+      balances.set(name, createDefaultPerson(name));
+    }
+  });
+
+  // Re-attach profile info to every person
+  balances.forEach((person, name) => {
+    const profile = profiles.get(name) || { imageUrl: '', role: '', funFact: '' };
+    person.imageUrl = profile.imageUrl;
+    person.role = profile.role;
+    person.boardNumber = profile.boardNumber;
+    person.funFact = profile.funFact;
   });
 
   const anytimers = Array.from(balances.values()).sort((a, b) => {
@@ -317,6 +359,33 @@ module.exports = async (req, res) => {
         };
 
         cleanData.ledger.push(newTx);
+      } else if (action === 'update_profile') {
+        const { personName, imageUrl, role, funFact } = body;
+        const normalizedName = normalizePersonName(personName);
+
+        if (!normalizedName) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required parameter: personName' }));
+          return;
+        }
+
+        const safeImageUrl = sanitizeProfileText(imageUrl, 500);
+        if (safeImageUrl && !/^https?:\/\//i.test(safeImageUrl)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Image URL must start with http:// or https://' }));
+          return;
+        }
+
+        let person = cleanData.anytimers.find(p => normalizePersonName(p.name) === normalizedName);
+        if (!person) {
+          person = createDefaultPerson(normalizedName);
+          cleanData.anytimers.push(person);
+        }
+
+        person.imageUrl = safeImageUrl;
+        person.role = sanitizeProfileText(role, 60);
+        person.boardNumber = sanitizeProfileText(body.boardNumber, 34);
+        person.funFact = sanitizeProfileText(funFact, 200);
       } else if (action === 'delete_transaction') {
         const { transactionId } = body;
         if (!transactionId) {
@@ -328,7 +397,25 @@ module.exports = async (req, res) => {
         cleanData.ledger = cleanData.ledger.filter(tx => tx.id !== transactionId);
       } else if (action === 'clear_ledger') {
         cleanData.ledger = [];
-      } else {
+      } else if (action === 'delete_person'){
+        const { personName } = body;
+        const normalizedName = normalizePersonName(personName);
+
+        if (!normalizedName) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required parameter: personName' }));
+          return;
+        }
+
+        cleanData.ledger = cleanData.ledger.filter(
+          tx => normalizePersonName(tx.personName || tx.person || tx.name) !== normalizedName
+        );
+
+        cleanData.anytimers = cleanData.anytimers.filter(
+          p => normalizePersonName(p.name) !== normalizedName
+        );
+      }
+      else {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Unknown action' }));
         return;
