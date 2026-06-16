@@ -3,21 +3,25 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-// Load .env file if it exists to avoid needing external dependencies like dotenv
-const envPath = path.join(process.cwd(), '.env');
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  envContent.split(/\r?\n/).forEach(line => {
+// Load .env and .env.local files if they exist (no external deps needed)
+// .env.local takes priority and overrides .env (used for Vercel-pulled credentials)
+function loadEnvFile(filePath, override = false) {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, 'utf8');
+  content.split(/\r?\n/).forEach(line => {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith('#')) {
       const [key, ...valueParts] = trimmed.split('=');
       const value = valueParts.join('=').trim();
-      if (key && value) {
+      if (key && value && (override || !process.env[key.trim()])) {
         process.env[key.trim()] = value.replace(/^['"]|['"]$/g, '');
       }
     }
   });
 }
+
+loadEnvFile(path.join(process.cwd(), '.env'));
+loadEnvFile(path.join(process.cwd(), '.env.local'), true); // override with local secrets
 
 const PORT = process.env.PORT || 3000;
 
