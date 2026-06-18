@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
+const { verifyToken } = require('./_auth');
 
 const localDataPath = path.join(process.cwd(), 'data.json');
 let inMemoryData = null;
@@ -9,24 +9,6 @@ const DEFAULT_DATA = {
   anytimers: [],
   ledger: []
 };
-
-// Helper to verify admin token
-function verifyToken(req) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return false;
-  }
-  const token = authHeader.split(' ')[1];
-  const parts = token.split('.');
-  if (parts.length !== 2 || parts[0] !== 'admin') {
-    return false;
-  }
-  const salt = process.env.ADMIN_PASSWORD || 'admin123';
-  const expectedHash = crypto.createHmac('sha256', salt)
-    .update('admin-session')
-    .digest('hex');
-  return parts[1] === expectedHash;
-}
 
 // Helper to read data with dual-mode storage
 async function getScoreboardData() {
@@ -370,9 +352,12 @@ module.exports = async (req, res) => {
         }
 
         const safeImageUrl = sanitizeProfileText(imageUrl, 500);
-        if (safeImageUrl && !/^https?:\/\//i.test(safeImageUrl)) {
+        // Accept either a permanent https:// URL (e.g. a Vercel Blob URL) or
+        // a local relative path under assets/ (used by the local-dev upload
+        // fallback when no Blob store is configured).
+        if (safeImageUrl && !/^(https?:\/\/|assets\/)/i.test(safeImageUrl)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Image URL must start with http:// or https://' }));
+          res.end(JSON.stringify({ error: 'Image URL must be an https:// link or a local assets/ path' }));
           return;
         }
 

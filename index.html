@@ -264,8 +264,16 @@
                   <input type="text" id="input-profile-name" placeholder="e.g. Rick">
                 </div>
                 <div class="form-group">
-                  <label for="input-profile-image">Image URL</label>
-                  <input type="url" id="input-profile-image" placeholder="https://example.com/photo.jpg">
+                  <label for="input-profile-image-file">Profile Photo</label>
+                  <input type="file" id="input-profile-image-file" accept="image/png, image/jpeg, image/webp, image/gif">
+                  <p class="form-hint">PNG, JPG, WEBP, or GIF — max 3MB. Uploading replaces any existing photo for this
+                    person and gives it a permanent link (no more 24h expiry).</p>
+                  <p class="upload-status hidden" id="profile-image-upload-status"></p>
+                  <div class="profile-image-preview-wrap hidden" id="profile-image-preview-wrap">
+                    <img id="profile-image-preview" alt="Current photo preview">
+                  </div>
+                  <!-- Holds the resolved permanent URL after upload; submitted with the rest of the form -->
+                  <input type="hidden" id="input-profile-image" value="">
                 </div>
                 <div class="form-row">
                   <div class="form-group">
@@ -400,8 +408,9 @@
           </div>
           <hr class="card-divider">
           <h3>Technical Stack</h3>
-          <p>Built with native HTML5, CSS3, and JavaScript, powered by Vercel Serverless API functions and Vercel KV for
-            global state management. Secures edits via HMAC SHA-256 session signatures.</p>
+          <p>Built with native HTML5, CSS3, and JavaScript, powered by Vercel Serverless API functions, Vercel KV for
+            global state management, and Vercel Blob for persistent profile photo storage. Secures edits via HMAC
+            SHA-256 session signatures.</p>
         </div>
       </div>
     </section>

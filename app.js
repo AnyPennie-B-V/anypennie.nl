@@ -10,6 +10,7 @@ const STATE = {
 };
 
 const API_BASE = '/api';
+const MAX_IMAGE_BYTES = 3 * 1024 * 1024; // 3MB, kept in sync with api/upload-image.js
 
 // ==========================================================================
 // SMALL UTILITIES
@@ -350,6 +351,11 @@ function setupEventListeners() {
     profileSelect.addEventListener('change', handleProfilePersonSelect);
   }
 
+  const profileImageFile = document.getElementById('input-profile-image-file');
+  if (profileImageFile) {
+    profileImageFile.addEventListener('change', handleProfileImageFileChange);
+  }
+
   // Admin Actions: Clear Ledger Purge
   const clearButton = document.getElementById('btn-clear-ledger');
   if (clearButton) {
@@ -534,15 +540,35 @@ function populateProfileSelect() {
   }
 }
 
+function setProfileImagePreview(imageUrl) {
+  const previewWrap = document.getElementById('profile-image-preview-wrap');
+  const previewImg = document.getElementById('profile-image-preview');
+  if (!previewWrap || !previewImg) return;
+
+  if (imageUrl) {
+    previewImg.src = imageUrl;
+    previewWrap.classList.remove('hidden');
+  } else {
+    previewImg.src = '';
+    previewWrap.classList.add('hidden');
+  }
+}
+
 function handleProfilePersonSelect() {
   const select = document.getElementById('profile-person-select');
   const nameInput = document.getElementById('input-profile-name');
-  const imageInput = document.getElementById('input-profile-image');
+  const imageInput = document.getElementById('input-profile-image'); // hidden, holds the resolved URL
+  const fileInput = document.getElementById('input-profile-image-file');
   const roleInput = document.getElementById('input-profile-role');
   const boardInput = document.getElementById('input-profile-board');
   const funFactInput = document.getElementById('input-profile-funfact');
+  const statusEl = document.getElementById('profile-image-upload-status');
 
   const selectedName = select.value;
+
+  // Switching people always clears any in-progress file selection/status
+  if (fileInput) fileInput.value = '';
+  if (statusEl) statusEl.classList.add('hidden');
 
   if (!selectedName) {
     nameInput.value = '';
@@ -553,6 +579,7 @@ function handleProfilePersonSelect() {
       boardInput.value = '';
     }
     funFactInput.value = '';
+    setProfileImagePreview('');
     return;
   }
 
@@ -563,6 +590,72 @@ function handleProfilePersonSelect() {
   roleInput.value = person?.role || '';
   if(boardInput) boardInput.value = person?.boardNumber || '';
   funFactInput.value = person?.funFact || '';
+  setProfileImagePreview(person?.imageUrl || '');
+}
+
+// Reads the chosen file, uploads it to /api/upload-image, and stores the
+// resulting permanent URL in the hidden #input-profile-image field.
+async function handleProfileImageFileChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('profile-image-upload-status');
+  const hiddenInput = document.getElementById('input-profile-image');
+
+  const showStatus = (text) => {
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.classList.remove('hidden');
+  };
+
+  if (file.size > MAX_IMAGE_BYTES) {
+    showStatus('Image too large (max 3MB).');
+    e.target.value = '';
+    return;
+  }
+
+  if (!STATE.token) {
+    alert('Authentication required to upload images.');
+    e.target.value = '';
+    return;
+  }
+
+  try {
+    showStatus('Uploading…');
+
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.readAsDataURL(file);
+    });
+
+    const select = document.getElementById('profile-person-select');
+    const nameInput = document.getElementById('input-profile-name');
+    const personName = ((select && select.value) || (nameInput && nameInput.value) || 'person').trim();
+
+    const response = await fetch(`${API_BASE}/upload-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${STATE.token}`
+      },
+      body: JSON.stringify({ imageData: dataUrl, personName })
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    hiddenInput.value = result.url;
+    setProfileImagePreview(result.url);
+    showStatus('Uploaded ✓');
+    setTimeout(() => statusEl && statusEl.classList.add('hidden'), 2000);
+  } catch (error) {
+    showStatus('Upload error: ' + error.message);
+    e.target.value = '';
+  }
 }
 
 async function handleUpdateProfile(e) {
