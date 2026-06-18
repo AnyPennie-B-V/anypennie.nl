@@ -8,6 +8,6 @@
     "dev": "node server.js"
   },
   "dependencies": {
-    "@vercel/blob": "^0.0.2"
+    "@vercel/blob": "^2.4.0"
   }
 }
