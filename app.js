@@ -159,7 +159,7 @@ function renderAnytimers() {
 
   STATE.anytimers.forEach(person => {
     const card = document.createElement('article');
-    card.className = 'card anytimer-card';
+    card.className = `card anytimer-card ${person.type === 'external' ? 'external' : ''}`;
 
     const statusClass = person.outstanding > 0 ? 'has-outstanding' : 'is-cleared';
 
@@ -172,11 +172,13 @@ function renderAnytimers() {
 
     // Automatically make everyone a Treasurer, adding the prefix if a board number exists
     let combinedRoleText = "Treasurer";
-    if (person.boardNumber) {
+    if (person.type === 'external') {
+      combinedRoleText = "External";
+    } else if (person.boardNumber) {
       combinedRoleText = `${getOrdinalSuffix(person.boardNumber)} Treasurer`;
     }
 
-    const roleHTML = `<div class="anytimer-role">(${escapeHtml(person.role)})</div>`;
+    const roleHTML = person.role ? `<div class="anytimer-role">(${escapeHtml(person.role)})</div>` : '';
     const combinedRoleHtml = `<div class="anytimer-role">${escapeHtml(combinedRoleText)}</div>`;
     const funFactHtml = person.funFact ? `<div class="anytimer-funfact">“${escapeHtml(person.funFact)}”</div>` : '';
 
@@ -365,6 +367,21 @@ function setupEventListeners() {
   const purgePersonForm = document.getElementById('form-purge-person');
   if (purgePersonForm) {
     purgePersonForm.addEventListener('submit', handlePurgePerson);
+  }
+
+  // Toggle Board # visibility based on chosen Type
+  const profileTypeSelect = document.getElementById('input-profile-type');
+  if (profileTypeSelect) {
+    profileTypeSelect.addEventListener('change', () => {
+      const boardGroup = document.getElementById('group-profile-board');
+      const boardInput = document.getElementById('input-profile-board');
+      if (profileTypeSelect.value === 'external') {
+        if (boardGroup) boardGroup.classList.add('hidden');
+        if (boardInput) boardInput.value = '';
+      } else {
+        if (boardGroup) boardGroup.classList.remove('hidden');
+      }
+    });
   }
 
 }
@@ -559,8 +576,10 @@ function handleProfilePersonSelect() {
   const nameInput = document.getElementById('input-profile-name');
   const imageInput = document.getElementById('input-profile-image'); // hidden, holds the resolved URL
   const fileInput = document.getElementById('input-profile-image-file');
+  const typeSelect = document.getElementById('input-profile-type');
   const roleInput = document.getElementById('input-profile-role');
   const boardInput = document.getElementById('input-profile-board');
+  const boardGroup = document.getElementById('group-profile-board');
   const funFactInput = document.getElementById('input-profile-funfact');
   const statusEl = document.getElementById('profile-image-upload-status');
 
@@ -574,9 +593,15 @@ function handleProfilePersonSelect() {
     nameInput.value = '';
     nameInput.disabled = false;
     imageInput.value = '';
+    if (typeSelect) {
+      typeSelect.value = 'treasurer';
+    }
     roleInput.value = '';
     if (boardInput) {
       boardInput.value = '';
+    }
+    if (boardGroup) {
+      boardGroup.classList.remove('hidden');
     }
     funFactInput.value = '';
     setProfileImagePreview('');
@@ -587,8 +612,22 @@ function handleProfilePersonSelect() {
   nameInput.value = selectedName;
   nameInput.disabled = true;
   imageInput.value = person?.imageUrl || '';
+  if (typeSelect) {
+    typeSelect.value = person?.type || 'treasurer';
+  }
   roleInput.value = person?.role || '';
-  if(boardInput) boardInput.value = person?.boardNumber || '';
+  if (boardInput) {
+    boardInput.value = person?.boardNumber || '';
+  }
+  
+  if (boardGroup) {
+    if (person?.type === 'external') {
+      boardGroup.classList.add('hidden');
+    } else {
+      boardGroup.classList.remove('hidden');
+    }
+  }
+
   funFactInput.value = person?.funFact || '';
   setProfileImagePreview(person?.imageUrl || '');
 }
@@ -677,7 +716,8 @@ async function handleUpdateProfile(e) {
     imageUrl: document.getElementById('input-profile-image').value.trim(),
     role: document.getElementById('input-profile-role').value.trim(),
     boardNumber: document.getElementById('input-profile-board') ? document.getElementById('input-profile-board').value.trim() : '',
-    funFact: document.getElementById('input-profile-funfact').value.trim()
+    funFact: document.getElementById('input-profile-funfact').value.trim(),
+    type: document.getElementById('input-profile-type') ? document.getElementById('input-profile-type').value : 'treasurer'
   };
 
   const success = await sendAdminAction(payload);

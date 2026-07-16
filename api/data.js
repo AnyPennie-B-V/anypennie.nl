@@ -112,7 +112,8 @@ function createDefaultPerson(name) {
     imageUrl: '',
     role: '',
     boardNumber: '',
-    funFact: ''
+    funFact: '',
+    type: 'treasurer'
   };
 }
 
@@ -146,7 +147,8 @@ function recalculateTotals(data) {
       imageUrl: sanitizeProfileText(person.imageUrl, 500),
       role: sanitizeProfileText(person.role, 60),
       boardNumber: sanitizeProfileText(person.boardNumber, 34),
-      funFact: sanitizeProfileText(person.funFact, 200)
+      funFact: sanitizeProfileText(person.funFact, 200),
+      type: sanitizeProfileText(person.type, 20)
     });
   });
 
@@ -197,11 +199,12 @@ function recalculateTotals(data) {
 
   // Re-attach profile info to every person
   balances.forEach((person, name) => {
-    const profile = profiles.get(name) || { imageUrl: '', role: '', funFact: '' };
+    const profile = profiles.get(name) || { imageUrl: '', role: '', funFact: '', type: 'treasurer' };
     person.imageUrl = profile.imageUrl;
     person.role = profile.role;
     person.boardNumber = profile.boardNumber;
     person.funFact = profile.funFact;
+    person.type = profile.type || 'treasurer';
   });
 
   const anytimers = Array.from(balances.values()).sort((a, b) => {
@@ -342,7 +345,7 @@ module.exports = async (req, res) => {
 
         cleanData.ledger.push(newTx);
       } else if (action === 'update_profile') {
-        const { personName, imageUrl, role, funFact } = body;
+        const { personName, imageUrl, role, funFact, type } = body;
         const normalizedName = normalizePersonName(personName);
 
         if (!normalizedName) {
@@ -371,6 +374,7 @@ module.exports = async (req, res) => {
         person.role = sanitizeProfileText(role, 60);
         person.boardNumber = sanitizeProfileText(body.boardNumber, 34);
         person.funFact = sanitizeProfileText(funFact, 200);
+        person.type = sanitizeProfileText(type, 20) || 'treasurer';
       } else if (action === 'delete_transaction') {
         const { transactionId } = body;
         if (!transactionId) {
