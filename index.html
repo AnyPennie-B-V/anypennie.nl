@@ -303,6 +303,34 @@
               </form>
             </div>
 
+            <!-- Manage Game Leaderboard -->
+            <div class="card admin-control-card">
+              <h3>Pennie Ninja</h3>
+              <p>Delete inappropriate or fake scores from the AnyPennie Ninja leaderboard.</p>
+              
+              <!-- Search Bar -->
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label for="admin-leaderboard-search">Search Player Name</label>
+                <input type="text" id="admin-leaderboard-search" placeholder="Type name to filter..." autocomplete="off">
+              </div>
+              
+              <div class="table-responsive admin-leaderboard-table-wrap">
+                <table class="ledger-table" style="font-size: 0.9em;">
+                  <thead>
+                    <tr>
+                      <th style="position: sticky; top: 0; background-color: #141d12; z-index: 2; width: 60px;">Rank</th>
+                      <th style="position: sticky; top: 0; background-color: #141d12; z-index: 2;">Name</th>
+                      <th style="position: sticky; top: 0; background-color: #141d12; z-index: 2;">Score</th>
+                      <th style="position: sticky; top: 0; background-color: #141d12; z-index: 2;"><span style="color: #c83b3b;">Delete</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-leaderboard-body">
+                    <tr><td colspan="4" class="text-center">Loading scores...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div class="card admin-control-card settings-card">
               <h3>Danger Zone</h3>
               <p>Permanently delete a specific person, or purge the entire audit trail.</p>
@@ -423,6 +451,11 @@
     </section>
 
   </main>
+
+  <!-- Easter Egg Game Link -->
+  <a href="game.html" class="easter-egg-coin">
+    <img src="assets/kanon.png" alt="Secret Game">
+  </a>
 
   <!-- Footer -->
   <footer>

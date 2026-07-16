@@ -5,6 +5,7 @@ const STATE = {
   anytimers: [],
   totalOutstanding: 0,
   ledger: [],
+  gameLeaderboard: [],
   token: localStorage.getItem('admin_token') || null,
   isAuthenticated: false
 };
@@ -35,10 +36,10 @@ function getInitials(name) {
 // ==========================================================================
 // INITIALIZATION & ROUTING
 // ==========================================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initRouting();
-  fetchData();
-  checkAuth();
+  await checkAuth();
+  await fetchData();
   setupEventListeners();
 });
 
@@ -83,11 +84,14 @@ function initRouting() {
 async function fetchData() {
   try {
     const headers = {};
-    if (STATE.token) {
+    let url = `${API_BASE}/data`;
+    
+    if (STATE.isAuthenticated && STATE.token) {
       headers['Authorization'] = `Bearer ${STATE.token}`;
+      url += '?all_games=true';
     }
 
-    const response = await fetch(`${API_BASE}/data`, { headers });
+    const response = await fetch(url, { headers });
     if (!response.ok) {
       throw new Error('Failed to retrieve scoreboard data');
     }
@@ -97,6 +101,7 @@ async function fetchData() {
     STATE.anytimers = resData.anytimers || [];
     STATE.totalOutstanding = resData.totalOutstanding || 0;
     STATE.ledger = resData.ledger;
+    STATE.gameLeaderboard = resData.gameLeaderboard || [];
 
     // Display storage warning if Vercel is warning us
     const warningBanner = document.getElementById('storage-warning');
@@ -109,6 +114,7 @@ async function fetchData() {
     renderDashboard();
     renderAnytimers();
     renderLedger();
+    renderAdminLeaderboard();
     populateProfileSelect();
     populatePersonSelects();
   } catch (error) {
@@ -280,7 +286,7 @@ async function checkAuth() {
 
   // Try to read authenticated data, if it responds 200, we are confirmed admins
   try {
-    const response = await fetch(`${API_BASE}/data`, {
+    const response = await fetch(`${API_BASE}/data?check_auth=true`, {
       headers: { 'Authorization': `Bearer ${STATE.token}` }
     });
 
@@ -367,6 +373,12 @@ function setupEventListeners() {
   const purgePersonForm = document.getElementById('form-purge-person');
   if (purgePersonForm) {
     purgePersonForm.addEventListener('submit', handlePurgePerson);
+  }
+
+  // Manage Game Leaderboard Search
+  const searchInput = document.getElementById('admin-leaderboard-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', renderAdminLeaderboard);
   }
 
   // Toggle Board # visibility based on chosen Type
@@ -796,10 +808,12 @@ async function sendAdminAction(payload) {
     STATE.anytimers = resData.anytimers || [];
     STATE.totalOutstanding = resData.totalOutstanding || 0;
     STATE.ledger = resData.ledger;
+    STATE.gameLeaderboard = resData.gameLeaderboard || [];
 
     renderDashboard();
     renderAnytimers();
     renderLedger();
+    renderAdminLeaderboard();
     populateProfileSelect();
     populatePersonSelects();
 
@@ -807,5 +821,67 @@ async function sendAdminAction(payload) {
   } catch (error) {
     alert('Admin Error: ' + error.message);
     return false;
+  }
+}
+
+// ==========================================================================
+// GAME LEADERBOARD
+// ==========================================================================
+function renderAdminLeaderboard() {
+  const tbody = document.getElementById('admin-leaderboard-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  if (STATE.gameLeaderboard.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center">No scores recorded yet.</td></tr>`;
+    return;
+  }
+
+  const searchInput = document.getElementById('admin-leaderboard-search');
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+  const filteredScores = STATE.gameLeaderboard.filter(score => 
+    String(score.playerName || '').toLowerCase().includes(query)
+  );
+
+  if (filteredScores.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center">No matching scores found.</td></tr>`;
+    return;
+  }
+
+  filteredScores.forEach(score => {
+    const globalRank = STATE.gameLeaderboard.findIndex(s => s.id === score.id) + 1;
+    const tr = document.createElement('tr');
+    
+    tr.innerHTML = `
+      <td><strong>#${globalRank}</strong></td>
+      <td>${escapeHtml(score.playerName)}</td>
+      <td><strong>${score.score}</strong> pts</td>
+      <td>
+        <button class="delete-tx-btn delete-score-btn" data-id="${score.id}" title="Delete score">🗑️</button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  if (STATE.isAuthenticated) {
+    document.querySelectorAll('.delete-score-btn').forEach(btn => {
+      btn.addEventListener('click', handleDeleteGameScore);
+    });
+  }
+}
+
+async function handleDeleteGameScore(e) {
+  const scoreId = e.currentTarget.getAttribute('data-id');
+  if (!scoreId) return;
+
+  if (confirm('Are you sure you want to permanently delete this game score?')) {
+    const payload = {
+      action: 'delete_game_score',
+      scoreId
+    };
+    await sendAdminAction(payload);
   }
 }

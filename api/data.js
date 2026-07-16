@@ -7,7 +7,8 @@ let inMemoryData = null;
 
 const DEFAULT_DATA = {
   anytimers: [],
-  ledger: []
+  ledger: [],
+  gameLeaderboard: []
 };
 
 // Helper to read data with dual-mode storage
@@ -127,11 +128,34 @@ function sanitizeProfileText(value, maxLength) {
   return String(value || '').trim().slice(0, maxLength);
 }
 
+function getDeduplicatedLeaderboard(rawLeaderboard) {
+  const uniqueScores = new Map();
+  rawLeaderboard.forEach(entry => {
+    const key = (entry.playerName || 'Anonymous').toLowerCase();
+    if (!uniqueScores.has(key)) {
+      uniqueScores.set(key, entry);
+    } else {
+      const existing = uniqueScores.get(key);
+      if (entry.score > existing.score) {
+        uniqueScores.set(key, entry);
+      } else if (entry.score === existing.score) {
+        if (new Date(entry.timestamp) > new Date(existing.timestamp)) {
+          uniqueScores.set(key, entry);
+        }
+      }
+    }
+  });
+  return Array.from(uniqueScores.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 100);
+}
+
 // Recalculates balances from the ledger to ensure consistent state
 function recalculateTotals(data) {
   const cleanData = {
     anytimers: Array.isArray(data.anytimers) ? data.anytimers : [],
-    ledger: Array.isArray(data.ledger) ? data.ledger : []
+    ledger: Array.isArray(data.ledger) ? data.ledger : [],
+    gameLeaderboard: Array.isArray(data.gameLeaderboard) ? data.gameLeaderboard : []
   };
 
   // Profile info (image, role, fun fact) is NOT derived from the ledger, so
@@ -261,27 +285,44 @@ module.exports = async (req, res) => {
   const cleanData = recalculateTotals(data);
 
   if (req.method === 'GET') {
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const wantAllGames = urlObj.searchParams.get('all_games') === 'true';
+    const checkAuth = urlObj.searchParams.get('check_auth') === 'true';
+    const isAdmin = verifyToken(req);
+
+    if (checkAuth && !isAdmin) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
+    const showAllLeaderboard = wantAllGames && isAdmin;
+    const leaderboardToSend = showAllLeaderboard 
+      ? cleanData.gameLeaderboard 
+      : getDeduplicatedLeaderboard(cleanData.gameLeaderboard);
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       anytimers: cleanData.anytimers,
       totalOutstanding: cleanData.totalOutstanding,
       ledger: cleanData.ledger,
+      gameLeaderboard: leaderboardToSend,
       storageWarning: warning
     }));
     return;
   }
 
   if (req.method === 'POST') {
-    // Verify admin privileges
-    if (!verifyToken(req)) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Unauthorized: Admin privileges required' }));
-      return;
-    }
-
     try {
       const body = await getRequestBody(req);
       const action = body.action;
+
+      // Verify admin privileges for all actions except log_game_score
+      if (action !== 'log_game_score' && !verifyToken(req)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unauthorized: Admin privileges required' }));
+        return;
+      }
 
       if (action === 'log_any_received') {
         const { personName, quantity, note, admin, timestamp } = body;
@@ -403,6 +444,29 @@ module.exports = async (req, res) => {
         cleanData.anytimers = cleanData.anytimers.filter(
           p => normalizePersonName(p.name) !== normalizedName
         );
+      } else if (action === 'log_game_score') {
+        const { playerName, score } = body;
+        const normalizedName = sanitizeProfileText(playerName, 20) || 'Anonymous';
+        const safeScore = parseInt(score, 10) || 0;
+        
+        cleanData.gameLeaderboard.push({
+          id: createLedgerEntryId(),
+          playerName: normalizedName,
+          score: safeScore,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Sort descending
+        cleanData.gameLeaderboard.sort((a, b) => b.score - a.score);
+        
+      } else if (action === 'delete_game_score') {
+        const { scoreId } = body;
+        if (!scoreId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing scoreId' }));
+          return;
+        }
+        cleanData.gameLeaderboard = cleanData.gameLeaderboard.filter(s => s.id !== scoreId);
       }
       else {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -414,12 +478,18 @@ module.exports = async (req, res) => {
       const finalData = recalculateTotals(cleanData);
       const saveResult = await saveScoreboardData(finalData);
 
+      const isAdmin = verifyToken(req);
+      const leaderboardToSend = isAdmin 
+        ? finalData.gameLeaderboard 
+        : getDeduplicatedLeaderboard(finalData.gameLeaderboard);
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         success: true,
         anytimers: finalData.anytimers,
         totalOutstanding: finalData.totalOutstanding,
         ledger: finalData.ledger,
+        gameLeaderboard: leaderboardToSend,
         storage: saveResult.storage
       }));
     } catch (err) {
