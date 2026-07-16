@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnyPennie Ninja</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+
+  <!-- Preload images -->
+  <div id="preload">
+    <img src="assets/kanon.png" id="img-kanon">
+    <img src="assets/ketel1.png" id="img-ketel1">
+    <img src="assets/coin.png" id="img-coin">
+    <img src="assets/CCV.png" id="img-ccv">
+  </div>
+
+  <div class="score-display hidden" id="score-container">SCORE: <span id="score-val">0</span></div>
+  <div class="lives-display hidden" id="lives-val">❤️❤️❤️</div>
+
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Start Screen -->
+  <div class="overlay" id="start-screen">
+    <a href="index.html" class="back-btn">← BACK TO HOME</a>
+    <div class="logo-container">
+      <img src="assets/game-logo.png" alt="AnyPennie Ninja" class="game-logo-title">
+      <div class="splash-text" id="splash-text">Slice the Kanon!</div>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center; z-index: 12;">
+      <button class="game-btn" id="start-btn">START SLICING</button>
+      <a href="leaderboard.html" class="game-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); font-size: 1.5rem; padding: 0.8rem 2rem; text-decoration: none;">LEADERBOARD</a>
+      <button class="game-btn" id="rules-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); font-size: 1.5rem; padding: 0.8rem 2rem;">RULES</button>
+    </div>
+  </div>
+
+  <!-- Rules Modal -->
+  <div class="overlay hidden" id="rules-modal" style="background: rgba(0, 0, 0, 0.9); z-index: 100;">
+    <div class="modal-content" style="background: #181818; border: 2px solid #E62272; border-radius: 12px; padding: 2.5rem; max-width: 700px; width: 90%; max-height: 85vh; overflow-y: auto; text-align: center; box-shadow: 0 0 30px rgba(230, 34, 114, 0.3);">
+      <h2 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; margin-top: 0; margin-bottom: 1.5rem; color: #FFD700; letter-spacing: 1px;">So you found the easter egg!</h2>
+      
+      <p style="font-style: italic; color: #ddd; line-height: 1.6; margin-bottom: 2rem; font-size: 1rem; max-width: 600px; margin-left: auto; margin-right: auto; border-bottom: 1px dashed rgba(230, 34, 114, 0.3); padding-bottom: 1.5rem;">
+        "As you've probably noticed by now, a Treasurer's body is fueled by two things: <strong>Grolsch Kanon</strong> and <strong>Ketel 1</strong>. Treasurers love them so much, they must consume them the second they see them! But a Treasurer also worships other holy relics: cold hard cash and their sacred pin terminal. If anyone dares try to destroy them, disastrous consequences will follow. Your goal is simple: Protect the treasury and slice as many drinks as possible, before you run out of lives!"
+      </p>
+      
+      <div style="display: flex; gap: 2rem; justify-content: space-around; flex-wrap: wrap; margin-bottom: 2rem; text-align: left;">
+        <!-- Good items group -->
+        <div style="flex: 1; min-width: 250px; background: rgba(0, 255, 0, 0.02); border: 1px solid rgba(0, 255, 0, 0.15); padding: 1.5rem; border-radius: 8px;">
+          <h3 style="color: #4cd137; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; margin-top: 0; border-bottom: 1px solid rgba(0, 255, 0, 0.2); padding-bottom: 0.5rem; margin-bottom: 0.4rem;">GOOD ITEMS (SLICE!)</h3>
+          <p style="color: #2ed573; font-size: 0.95rem; margin-top: 0; margin-bottom: 1.2rem; font-style: italic;">Drop one, and you lose a life!</p>
+          
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+            <div style="width: 50px; height: 60px; display: flex; align-items: center; justify-content: center;">
+              <img src="assets/kanon.png" style="max-height: 100px; max-width: 80px; object-fit: contain;">
+            </div>
+            <div>
+              <strong style="color: #fff; font-size: 1.1rem;">Grolsch Kanon</strong>
+              <p style="margin: 0.2rem 0 0; color: #bbb; font-size: 0.85rem; line-height: 1.3;">Worth <span style="color: #FFD700; font-weight: bold;">10 points</span></p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 60px; display: flex; align-items: center; justify-content: center;">
+              <img src="assets/ketel1.png" style="max-height: 100px; max-width: 80px; object-fit: contain;">
+            </div>
+            <div>
+              <strong style="color: #fff; font-size: 1.1rem;">Ketel 1</strong>
+              <p style="margin: 0.2rem 0 0; color: #bbb; font-size: 0.85rem; line-height: 1.3;">Also worth <span style="color: #FFD700; font-weight: bold;">10 points</span>. Slicing immediately after a Grolsch Kanon grants a <span style="color: #E62272; font-weight: bold;">+5 Bonus</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bad items group -->
+        <div style="flex: 1; min-width: 250px; background: rgba(255, 0, 0, 0.02); border: 1px solid rgba(255, 0, 0, 0.15); padding: 1.5rem; border-radius: 8px;">
+          <h3 style="color: #ff4757; font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; margin-top: 0; border-bottom: 1px solid rgba(255, 0, 0, 0.2); padding-bottom: 0.5rem; margin-bottom: 0.4rem;">BAD ITEMS</h3>
+          <p style="color: #ff6b81; font-size: 0.95rem; margin-top: 0; margin-bottom: 1.2rem; font-style: italic;">Slice one, and it's <span style="color: #ff0000; font-weight: bold;">Game Over</span>!</p>
+          
+          <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem;">
+            <div style="width: 50px; height: 60px; display: flex; align-items: center; justify-content: center;">
+              <img src="assets/coin.png" style="max-height: 75px; max-width: 75px; object-fit: contain;">
+            </div>
+            <div>
+              <strong style="color: #fff; font-size: 1.1rem;">Coin</strong>
+              <p style="margin: 0.2rem 0 0; color: #bbb; font-size: 0.85rem; line-height: 1.3;">Real Treasurers don't waste money</p>
+            </div>
+          </div>
+          
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="width: 50px; height: 60px; display: flex; align-items: center; justify-content: center;">
+              <img src="assets/CCV.png" style="max-height: 150px; max-width: 130px; object-fit: contain;">
+            </div>
+            <div>
+              <strong style="color: #fff; font-size: 1.1rem;">Pin Terminal</strong>
+              <p style="margin: 0.2rem 0 0; color: #bbb; font-size: 0.85rem; line-height: 1.3;">This is your baby. Don't slice it!!<p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <button class="game-btn" id="close-rules-btn" style="font-size: 1.5rem; padding: 0.8rem 2.5rem; background: #555;">GO BACK</button>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div class="overlay hidden" id="game-over-screen">
+    <h1 class="game-over-title">GAME OVER</h1>
+    <div class="final-score">Final Score: <span id="final-score-val">0</span></div>
+    
+    <div class="input-group" id="score-submit-group">
+      <input type="text" id="player-name" class="name-input" placeholder="Enter your name" maxlength="20">
+      <button class="game-btn" id="submit-score-btn" style="padding: 1rem 1.5rem;">SUBMIT</button>
+    </div>
+    
+    <button class="game-btn hidden" id="restart-btn">PLAY AGAIN</button>
+
+    <div class="leaderboard-container">
+      <h2 class="leaderboard-title">TOP 10 SLICERS</h2>
+      <div id="leaderboard-list">
+        <div style="text-align:center; padding: 20px;">Loading scores...</div>
+      </div>
+      <div style="text-align: center; margin-top: 1.5rem;">
+        <a href="leaderboard.html" style="color: #E62272; text-decoration: underline; font-family: 'Inter', sans-serif; font-size: 1.1rem; letter-spacing: 1px;">VIEW FULL LEADERBOARD</a>
+      </div>
+    </div>
+
+    <a href="game.html" class="game-btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); font-size: 1.25rem; padding: 0.6rem 2rem; margin-top: 1.5rem; text-decoration: none; display: inline-block;">GO BACK</a>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

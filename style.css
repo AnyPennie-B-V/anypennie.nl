@@ -862,6 +862,19 @@ nav .nav-link.active::after {
   color: #ff334b;
 }
 
+.admin-leaderboard-table-wrap {
+  max-height: 640px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.admin-leaderboard-table-wrap::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 /* ==========================================================================
    TAB 3: LOG CONSUMPTION & ADMIN PANEL
    ========================================================================== */
@@ -1467,4 +1480,31 @@ footer {
   color: #00f2fe;
   background: rgba(0, 242, 254, 0.12);
   border-color: rgba(0, 242, 254, 0.2);
+}
+
+/* ==========================================================================
+   EASTER EGG LINK (SECRET COIN)
+   ========================================================================== */
+.easter-egg-coin {
+  position: fixed;
+  bottom: 4px;
+  left: 4px;
+  width: 40px;
+  height: 40px;
+  opacity: 0.12;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.easter-egg-coin img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.easter-egg-coin:hover {
+  opacity: 0.6;
+  transform: scale(1.1);
 }

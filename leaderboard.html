@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnyPennie Ninja - Leaderboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="leaderboard.css">
+</head>
+<body>
+  <h1 class="page-title">GLOBAL LEADERBOARD</h1>
+  
+  <div class="leaderboard-container">
+    <div id="leaderboard-list">
+      <div style="text-align:center; padding: 20px; font-size: 1.2rem;">Loading scores...</div>
+    </div>
+  </div>
+
+  <div class="pagination">
+    <button class="page-btn" id="prev-btn" disabled>PREVIOUS</button>
+    <div class="page-info" id="page-info">PAGE 1</div>
+    <button class="page-btn" id="next-btn" disabled>NEXT</button>
+  </div>
+
+  <a href="game.html" class="back-btn">← BACK TO GAME</a>
+
+  <script>
+    let allScores = [];
+    let currentPage = 1;
+    const scoresPerPage = 10;
+    
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const pageInfo = document.getElementById('page-info');
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+          }[tag]));
+    }
+
+    async function fetchLeaderboard() {
+      try {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        const rawScores = data.gameLeaderboard || [];
+        
+        const uniqueScores = new Map();
+        rawScores.forEach(entry => {
+          const key = (entry.playerName || '').toLowerCase();
+          if (!key) return;
+          if (!uniqueScores.has(key)) {
+            uniqueScores.set(key, entry);
+          } else {
+            const existing = uniqueScores.get(key);
+            if (entry.score > existing.score) {
+              uniqueScores.set(key, entry);
+            } else if (entry.score === existing.score) {
+              if (new Date(entry.timestamp) > new Date(existing.timestamp)) {
+                uniqueScores.set(key, entry);
+              }
+            }
+          }
+        });
+        
+        allScores = Array.from(uniqueScores.values()).sort((a, b) => b.score - a.score);
+        renderPage();
+      } catch (err) {
+        console.error(err);
+        leaderboardList.innerHTML = '<div style="text-align:center; padding: 20px; color: #ff3333; font-size: 1.2rem;">Failed to load leaderboard</div>';
+      }
+    }
+
+    function renderPage() {
+      if (allScores.length === 0) {
+        leaderboardList.innerHTML = '<div style="text-align:center; padding: 20px; font-size: 1.2rem;">No scores yet! Be the first to play!</div>';
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        pageInfo.innerText = 'PAGE 1 OF 1';
+        return;
+      }
+
+      const totalPages = Math.ceil(allScores.length / scoresPerPage);
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * scoresPerPage;
+      const endIndex = Math.min(startIndex + scoresPerPage, allScores.length);
+      const pageScores = allScores.slice(startIndex, endIndex);
+
+      leaderboardList.innerHTML = '';
+      pageScores.forEach((entry, idx) => {
+        const globalRank = startIndex + idx + 1;
+        const div = document.createElement('div');
+        div.className = 'leaderboard-item';
+        
+        if (globalRank === 1) {
+          div.classList.add('rank-gold');
+        } else if (globalRank === 2) {
+          div.classList.add('rank-silver');
+        } else if (globalRank === 3) {
+          div.classList.add('rank-bronze');
+        }
+
+        const dateStr = entry.timestamp 
+          ? new Date(entry.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) 
+          : '—';
+
+        div.innerHTML = `
+          <span class="rank">#${globalRank}</span>
+          <span class="name">${escapeHTML(entry.playerName)}</span>
+          <span class="score">${entry.score} pts</span>
+          <span class="date">${dateStr}</span>
+        `;
+        leaderboardList.appendChild(div);
+      });
+
+      pageInfo.innerText = `PAGE ${currentPage} OF ${totalPages}`;
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages;
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderPage();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      const totalPages = Math.ceil(allScores.length / scoresPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderPage();
+      }
+    });
+
+    fetchLeaderboard();
+  </script>
+</body>
+</html>
