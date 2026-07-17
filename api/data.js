@@ -150,6 +150,14 @@ function getDeduplicatedLeaderboard(rawLeaderboard) {
     .slice(0, 100);
 }
 
+function normalizeLeaderboardName(name) {
+  return String(name || '').trim().replace(/\s+/g, ' ');
+}
+
+function getLeaderboardNameKey(name) {
+  return normalizeLeaderboardName(name).toLowerCase();
+}
+
 // Recalculates balances from the ledger to ensure consistent state
 function recalculateTotals(data) {
   const cleanData = {
@@ -467,6 +475,43 @@ module.exports = async (req, res) => {
           return;
         }
         cleanData.gameLeaderboard = cleanData.gameLeaderboard.filter(s => s.id !== scoreId);
+      } else if (action === 'rename_game_player') {
+        const { playerName, newPlayerName } = body;
+        const oldName = normalizeLeaderboardName(playerName);
+        const renamedName = normalizeLeaderboardName(newPlayerName);
+
+        if (!oldName || !renamedName) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required parameters' }));
+          return;
+        }
+
+        if (getLeaderboardNameKey(oldName) === getLeaderboardNameKey(renamedName)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'New name must be different from the current name' }));
+          return;
+        }
+
+        let renamedCount = 0;
+        cleanData.gameLeaderboard = cleanData.gameLeaderboard.map(entry => {
+          if (getLeaderboardNameKey(entry.playerName) !== getLeaderboardNameKey(oldName)) {
+            return entry;
+          }
+
+          renamedCount += 1;
+          return {
+            ...entry,
+            playerName: renamedName
+          };
+        });
+
+        if (!renamedCount) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `No leaderboard entries found for ${oldName}` }));
+          return;
+        }
+
+        cleanData.gameLeaderboard.sort((a, b) => b.score - a.score);
       }
       else {
         res.writeHead(400, { 'Content-Type': 'application/json' });
