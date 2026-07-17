@@ -859,6 +859,7 @@ function renderAdminLeaderboard() {
       <td>${escapeHtml(score.playerName)}</td>
       <td><strong>${score.score}</strong> pts</td>
       <td>
+        <button class="delete-tx-btn rename-score-btn" data-id="${score.id}" data-name="${escapeHtml(score.playerName)}" title="Rename player">✏️</button>
         <button class="delete-tx-btn delete-score-btn" data-id="${score.id}" title="Delete score">🗑️</button>
       </td>
     `;
@@ -867,9 +868,48 @@ function renderAdminLeaderboard() {
   });
 
   if (STATE.isAuthenticated) {
+    document.querySelectorAll('.rename-score-btn').forEach(btn => {
+      btn.addEventListener('click', handleRenameGamePlayer);
+    });
     document.querySelectorAll('.delete-score-btn').forEach(btn => {
       btn.addEventListener('click', handleDeleteGameScore);
     });
+  }
+}
+
+async function handleRenameGamePlayer(e) {
+  const currentName = e.currentTarget.getAttribute('data-name');
+  if (!currentName) return;
+
+  const nextName = prompt(`Rename all leaderboard entries for "${currentName}" to:`, currentName);
+  if (nextName === null) return;
+
+  const trimmedName = nextName.trim();
+  if (!trimmedName) {
+    alert('Please enter a valid name.');
+    return;
+  }
+
+  if (trimmedName === currentName) {
+    return;
+  }
+
+  const payload = {
+    action: 'rename_game_player',
+    playerName: currentName,
+    newPlayerName: trimmedName
+  };
+
+  const success = await sendAdminAction(payload);
+  if (success && localStorage.getItem('ninjaPlayerName') === currentName) {
+    localStorage.setItem('ninjaPlayerName', trimmedName);
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'ninjaPlayerName',
+      oldValue: currentName,
+      newValue: trimmedName,
+      storageArea: localStorage,
+      url: window.location.href
+    }));
   }
 }
 

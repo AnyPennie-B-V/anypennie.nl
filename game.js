@@ -11,6 +11,7 @@ const startBtn = document.getElementById('start-btn');
 const restartBtn = document.getElementById('restart-btn');
 const submitScoreBtn = document.getElementById('submit-score-btn');
 const playerNameInput = document.getElementById('player-name');
+const clearSavedNameBtn = document.getElementById('clear-saved-name-btn');
 const scoreSubmitGroup = document.getElementById('score-submit-group');
 const leaderboardList = document.getElementById('leaderboard-list');
 const rulesBtn = document.getElementById('rules-btn');
@@ -47,6 +48,38 @@ function resizeCanvas() {
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
+function syncSavedPlayerNameInput() {
+  const savedName = localStorage.getItem('ninjaPlayerName');
+
+  if (savedName) {
+    playerNameInput.value = savedName;
+    playerNameInput.readOnly = true;
+    playerNameInput.style.opacity = '0.7';
+    if (clearSavedNameBtn) {
+      clearSavedNameBtn.classList.remove('hidden');
+    }
+  } else {
+    playerNameInput.value = '';
+    playerNameInput.readOnly = false;
+    playerNameInput.style.opacity = '1';
+    if (clearSavedNameBtn) {
+      clearSavedNameBtn.classList.add('hidden');
+    }
+  }
+}
+
+window.addEventListener('storage', (event) => {
+  if (event.key === 'ninjaPlayerName') {
+    syncSavedPlayerNameInput();
+  }
+});
+
+function clearSavedPlayerName() {
+  localStorage.removeItem('ninjaPlayerName');
+  syncSavedPlayerNameInput();
+  playerNameInput.focus();
+}
 
 // Item Types
 const ITEM_TYPES = {
@@ -376,16 +409,8 @@ function endGame() {
   
   scoreSubmitGroup.classList.remove('hidden');
   restartBtn.classList.add('hidden');
-  
-  const savedName = localStorage.getItem('ninjaPlayerName');
-  if (savedName) {
-    playerNameInput.value = savedName;
-    playerNameInput.readOnly = true;
-    playerNameInput.style.opacity = '0.7';
-  } else {
-    playerNameInput.value = '';
-    playerNameInput.readOnly = false;
-    playerNameInput.style.opacity = '1';
+  syncSavedPlayerNameInput();
+  if (!localStorage.getItem('ninjaPlayerName')) {
     playerNameInput.focus();
   }
   
@@ -571,6 +596,9 @@ async function submitScore() {
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', startGame);
 submitScoreBtn.addEventListener('click', submitScore);
+if (clearSavedNameBtn) {
+  clearSavedNameBtn.addEventListener('click', clearSavedPlayerName);
+}
 
 rulesBtn.addEventListener('click', () => {
   rulesModal.classList.remove('hidden');
@@ -602,7 +630,12 @@ const SPLASH_SLOGANS = [
   "Better than a pinbon!",
   "Thalia is not a drinking association!",
   "Consume the liquids!",
-  "Slicing in 2D!"
+  "Slicing in 2D!",
+  "Let's feut some kandies!",
+  "The moneybird is coming for you!",
+  "Ledger? I hardly know her!",
+  "Don't let the secretary touch your bookkeeping!",
+  "Beware of the Goblin!"
 ];
 
 function initSplashText() {
