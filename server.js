@@ -34,6 +34,7 @@ const MIME_TYPES = {
 const loginHandler = require('./api/login');
 const dataHandler = require('./api/data');
 const uploadImageHandler = require('./api/upload-image');
+const treasureHuntHandler = require('./api/auth-treasure-hunt');
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   let pathname = parsedUrl.pathname;
@@ -58,6 +59,10 @@ const server = http.createServer((req, res) => {
   }
   if (pathname === '/api/upload-image' || pathname === '/api/upload-image.js') {
     uploadImageHandler(req, res);
+    return;
+  }
+  if (pathname === '/api/auth-treasure-hunt' || pathname === '/api/auth-treasure-hunt.js') {
+    treasureHuntHandler(req, res);
     return;
   }
   // Default to index.html for root path

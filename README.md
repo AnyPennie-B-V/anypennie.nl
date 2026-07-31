@@ -24,6 +24,7 @@ Failure to comply with both conditions in this exact chronological order invalid
   - **Log Any Received**: Record when an Any has been assigned to a person.
   - **Log Any Taken**: Fulfill outstanding Any Pennies.
   - **Manage Profiles**: Register new people or update their name, role, board number, profile image URL, and fun facts.
+  - **Treasure Hunt**: Toggle the scavenger hunt visibility, add hint cards, and unlock the next challenge after proof arrives.
   - **Danger Zone**: Purge a specific person's profile and transactions, or clear the entire ledger history.
 - **Dual-Mode Persistence**:
   - **Local Development**: Persistent storage via a local `data.json` file.
@@ -71,6 +72,7 @@ Since `.env` is listed in your `.gitignore`, it is kept completely private and w
 | Environment Variable | Description | Default (if unset) |
 | :--- | :--- | :--- |
 | `ADMIN_PASSWORD` | The password required to authenticate admin actions. | `admin123` |
+| `TREASURE_HUNT_CODE` | The secret code used by the treasurer to unlock the hunt page. | `treasure123` |
 | `KV_REST_API_URL` | Vercel KV REST API endpoint URL (for production storage). | *(Uses local `data.json` if empty)* |
 | `KV_REST_API_TOKEN` | Vercel KV REST API read/write token. | *(Uses local `data.json` if empty)* |
 

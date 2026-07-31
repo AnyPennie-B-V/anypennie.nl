@@ -6,7 +6,13 @@ const STATE = {
   totalOutstanding: 0,
   ledger: [],
   gameLeaderboard: [],
+  treasureHunt: {
+    enabled: false,
+    currentStage: 0,
+    hints: []
+  },
   token: localStorage.getItem('admin_token') || null,
+  treasureToken: localStorage.getItem('treasure_hunt_token') || null,
   isAuthenticated: false
 };
 
@@ -39,6 +45,7 @@ function getInitials(name) {
 document.addEventListener('DOMContentLoaded', async () => {
   initRouting();
   await checkAuth();
+  await checkTreasureAuth();
   await fetchData();
   setupEventListeners();
 });
@@ -49,16 +56,16 @@ function initRouting() {
 
   function handleRoute() {
     const hash = window.location.hash || '#scoreboard';
-    
+
     // Deactivate all nav links and tab sections
     navLinks.forEach(link => link.classList.remove('active'));
     tabs.forEach(tab => tab.classList.remove('active'));
-    
+
     // Find active tab and link
     const activeTab = document.getElementById('tab-' + hash.replace('#', ''));
     const activeLink = document.querySelector(`a[href="${hash}"]`);
 
-    if (activeTab) {
+    if (activeTab && !activeTab.classList.contains('hidden')) {
       activeTab.classList.add('active');
     } else {
       // Fallback
@@ -68,7 +75,7 @@ function initRouting() {
     if (activeLink) {
       activeLink.classList.add('active');
     }
-    
+
     // Scroll to top
     window.scrollTo(0, 0);
   }
@@ -85,10 +92,12 @@ async function fetchData() {
   try {
     const headers = {};
     let url = `${API_BASE}/data`;
-    
+
     if (STATE.isAuthenticated && STATE.token) {
       headers['Authorization'] = `Bearer ${STATE.token}`;
       url += '?all_games=true';
+    } else if (STATE.treasureToken) {
+      headers['Authorization'] = `Bearer ${STATE.treasureToken}`;
     }
 
     const response = await fetch(url, { headers });
@@ -97,11 +106,12 @@ async function fetchData() {
     }
 
     const resData = await response.json();
-    
+
     STATE.anytimers = resData.anytimers || [];
     STATE.totalOutstanding = resData.totalOutstanding || 0;
     STATE.ledger = resData.ledger;
     STATE.gameLeaderboard = resData.gameLeaderboard || [];
+    STATE.treasureHunt = resData.treasureHunt || STATE.treasureHunt;
 
     // Display storage warning if Vercel is warning us
     const warningBanner = document.getElementById('storage-warning');
@@ -115,6 +125,8 @@ async function fetchData() {
     renderAnytimers();
     renderLedger();
     renderAdminLeaderboard();
+    renderTreasureHunt();
+    renderTreasureAdminPanel();
     populateProfileSelect();
     populatePersonSelects();
   } catch (error) {
@@ -145,7 +157,7 @@ function getOrdinalSuffix(numberStr) {
 
   const j = n % 10;
   const k = n % 100;
-  
+
   if (j === 1 && k !== 11) return n + "st";
   if (j === 2 && k !== 12) return n + "nd";
   if (j === 3 && k !== 13) return n + "rd";
@@ -215,7 +227,7 @@ function renderAnytimers() {
 function renderLedger() {
   const tbody = document.getElementById('ledger-body');
   const ledgerCount = document.getElementById('ledger-count');
-  
+
   tbody.innerHTML = '';
   ledgerCount.textContent = STATE.ledger.length;
 
@@ -229,12 +241,12 @@ function renderLedger() {
 
   sortedLedger.forEach(tx => {
     const tr = document.createElement('tr');
-    
+
     // Date & Time formatting
     const txDate = new Date(tx.timestamp);
     const dateStr = txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     const timeStr = txDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    
+
     const typeLabel = tx.type === 'any_received'
       ? 'Any received'
       : tx.type === 'any_taken'
@@ -320,6 +332,193 @@ function setAuthState(isAuth) {
   }
 }
 
+async function checkTreasureAuth() {
+  if (!STATE.treasureToken) {
+    setTreasureAuthState(false);
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/data?check_treasure_auth=true`, {
+      headers: { 'Authorization': `Bearer ${STATE.treasureToken}` }
+    });
+
+    if (response.status === 200) {
+      setTreasureAuthState(true);
+    } else {
+      localStorage.removeItem('treasure_hunt_token');
+      STATE.treasureToken = null;
+      setTreasureAuthState(false);
+    }
+  } catch (error) {
+    setTreasureAuthState(false);
+  }
+}
+
+function setTreasureAuthState(isAuth) {
+  const lockedPanel = document.getElementById('treasure-hunt-locked');
+  const contentPanel = document.getElementById('treasure-hunt-content');
+  const unlockError = document.getElementById('treasure-unlock-error');
+
+  if (unlockError) {
+    unlockError.classList.add('hidden');
+    unlockError.textContent = '';
+  }
+
+  if (lockedPanel && contentPanel) {
+    lockedPanel.classList.toggle('hidden', isAuth);
+    contentPanel.classList.toggle('hidden', !isAuth);
+  }
+
+  renderTreasureHunt();
+}
+
+function renderTreasureHunt() {
+  const section = document.getElementById('tab-treasure-hunt');
+  const launcher = document.getElementById('treasure-hunt-launcher');
+  const intro = document.getElementById('treasure-hunt-intro');
+  const visibleCount = document.getElementById('treasure-visible-count');
+  const hintsWrap = document.getElementById('treasure-hunt-hints');
+
+  if (!section || !launcher) return;
+
+  const enabled = !!STATE.treasureHunt.enabled;
+  section.classList.toggle('hidden', !enabled);
+  launcher.classList.toggle('hidden', !enabled);
+
+  if (!enabled) {
+    if (intro) {
+      intro.textContent = 'This hunt is hidden until the admins switch it on.';
+    }
+    return;
+  }
+
+  if (intro) {
+    intro.textContent = STATE.treasureHunt.completed
+      ? 'The treasure hunt is complete. The final proof is in.'
+      : (STATE.treasureToken
+        ? 'You are unlocked. The currently available hints are shown below.'
+        : 'The hunt is active. Enter the secret code to reveal the first hint.');
+  }
+
+  if (visibleCount) {
+    visibleCount.textContent = String(Math.min(STATE.treasureHunt.currentStage || 0, (STATE.treasureHunt.hints || []).length));
+  }
+
+  if (!hintsWrap) return;
+
+  const hints = Array.isArray(STATE.treasureHunt.hints) ? STATE.treasureHunt.hints : [];
+  if (STATE.treasureHunt.completed && !STATE.treasureToken) {
+    hintsWrap.innerHTML = `
+      <div class="card treasure-page-complete">
+        <h3>Treasure Hunt Complete</h3>
+        <p>You made it to the end of the route. Thanks for taking part in the hunt.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (!STATE.treasureToken) {
+    hintsWrap.innerHTML = '<div class="treasure-empty">Unlock the hunt to see the first clue.</div>';
+    return;
+  }
+
+  const visibleHints = hints.slice(0, Math.min(STATE.treasureHunt.currentStage || 0, hints.length));
+
+  if (visibleHints.length === 0) {
+    hintsWrap.innerHTML = hints.length > 0
+      ? '<div class="treasure-empty">The hunt has been reset. Wait for the admins to unlock the next challenge.</div>'
+      : '<div class="treasure-empty">No hints have been added yet.</div>';
+    return;
+  }
+
+  hintsWrap.innerHTML = '';
+  visibleHints.forEach((hint, index) => {
+    const card = document.createElement('article');
+    card.className = 'card treasure-hint-card';
+    card.innerHTML = `
+      <div class="treasure-hint-badge">Hint ${index + 1}</div>
+      <h3>${escapeHtml(hint.title || `Hint ${index + 1}`)}</h3>
+      <p>${escapeHtml(hint.description || '')}</p>
+    `;
+    hintsWrap.appendChild(card);
+  });
+
+  if (STATE.treasureHunt.completed) {
+    const completeCard = document.createElement('div');
+    completeCard.className = 'card treasure-page-complete';
+    completeCard.innerHTML = `
+      <h3>Treasure Hunt Complete</h3>
+      <p>The final proof has been submitted. The hunt is officially over.</p>
+    `;
+    hintsWrap.appendChild(completeCard);
+  }
+}
+
+function renderTreasureAdminPanel() {
+  const toggle = document.getElementById('treasure-enabled-toggle');
+  const hintsWrap = document.getElementById('treasure-admin-hints');
+
+  if (toggle) {
+    toggle.checked = !!STATE.treasureHunt.enabled;
+  }
+
+  if (!hintsWrap) return;
+
+  const hints = Array.isArray(STATE.treasureHunt.hints) ? STATE.treasureHunt.hints : [];
+  if (hints.length === 0) {
+    hintsWrap.innerHTML = '<div class="treasure-empty">No treasure hints have been created yet.</div>';
+    return;
+  }
+
+  hintsWrap.innerHTML = '';
+  hints.forEach((hint, index) => {
+    const card = document.createElement('div');
+    card.className = 'treasure-admin-hint';
+    card.innerHTML = `
+      <div class="treasure-admin-hint-header">
+        <div>
+          <strong>Hint ${index + 1}</strong>
+          <div class="treasure-admin-hint-title">${escapeHtml(hint.title || 'Untitled hint')}</div>
+        </div>
+        <button type="button" class="delete-tx-btn treasure-delete-hint-btn" data-id="${escapeHtml(hint.id)}" title="Delete hint">Delete</button>
+      </div>
+      <div class="form-group">
+        <label for="treasure-hint-title-${escapeHtml(hint.id)}">Hint Title</label>
+        <input type="text" class="treasure-hint-title-input" id="treasure-hint-title-${escapeHtml(hint.id)}" value="${escapeHtml(hint.title || '')}">
+      </div>
+      <div class="form-group">
+        <label for="treasure-hint-description-${escapeHtml(hint.id)}">Hint Description</label>
+        <textarea class="treasure-hint-description-input" id="treasure-hint-description-${escapeHtml(hint.id)}" rows="4">${escapeHtml(hint.description || '')}</textarea>
+      </div>
+      ${hint.proofImageUrl ? `<a class="treasure-proof-link" href="${escapeHtml(hint.proofImageUrl)}" target="_blank" rel="noreferrer">Proof image</a>` : '<div class="treasure-admin-proof-note">No proof image yet.</div>'}
+      ${hint.proofNote ? `<div class="treasure-admin-proof-note">${escapeHtml(hint.proofNote)}</div>` : ''}
+      <div class="treasure-admin-hint-actions">
+        <button type="button" class="cta-button secondary-btn treasure-save-hint-btn" data-id="${escapeHtml(hint.id)}">Save Hint</button>
+      </div>
+    `;
+    hintsWrap.appendChild(card);
+  });
+
+  const resetProgressButton = document.getElementById('btn-reset-treasure-progress');
+  if (resetProgressButton) {
+    resetProgressButton.addEventListener('click', handleResetTreasureProgress);
+  }
+
+  const clearHintsButton = document.getElementById('btn-clear-treasure-hints');
+  if (clearHintsButton) {
+    clearHintsButton.addEventListener('click', handleClearTreasureHints);
+  }
+
+  document.querySelectorAll('.treasure-save-hint-btn').forEach(btn => {
+    btn.addEventListener('click', handleUpdateTreasureHint);
+  });
+
+  document.querySelectorAll('.treasure-delete-hint-btn').forEach(btn => {
+    btn.addEventListener('click', handleDeleteTreasureHint);
+  });
+}
+
 // ==========================================================================
 // EVENT HANDLERS & POSTS
 // ==========================================================================
@@ -334,7 +533,7 @@ function setupEventListeners() {
 
   // Auth: Login Form
   document.getElementById('login-form').addEventListener('submit', handleLogin);
-  
+
   // Auth: Logout Button
   document.getElementById('btn-logout').addEventListener('click', handleLogout);
 
@@ -346,6 +545,11 @@ function setupEventListeners() {
   const takenForm = document.getElementById('form-log-any-taken');
   if (takenForm) {
     takenForm.addEventListener('submit', handleLogAnyTaken);
+  }
+
+  const treasureUnlockForm = document.getElementById('treasure-unlock-form');
+  if (treasureUnlockForm) {
+    treasureUnlockForm.addEventListener('submit', handleTreasureUnlock);
   }
 
   // Profile Management
@@ -379,6 +583,26 @@ function setupEventListeners() {
   const searchInput = document.getElementById('admin-leaderboard-search');
   if (searchInput) {
     searchInput.addEventListener('input', renderAdminLeaderboard);
+  }
+
+  const treasureToggle = document.getElementById('treasure-enabled-toggle');
+  if (treasureToggle) {
+    treasureToggle.addEventListener('change', handleTreasureVisibilityToggle);
+  }
+
+  const treasureHintForm = document.getElementById('form-add-treasure-hint');
+  if (treasureHintForm) {
+    treasureHintForm.addEventListener('submit', handleAddTreasureHint);
+  }
+
+  const treasureProofFile = document.getElementById('treasure-proof-image-file');
+  if (treasureProofFile) {
+    treasureProofFile.addEventListener('change', handleTreasureProofFileChange);
+  }
+
+  const treasureUnlockNextButton = document.getElementById('btn-unlock-next-treasure-hunt');
+  if (treasureUnlockNextButton) {
+    treasureUnlockNextButton.addEventListener('click', handleUnlockNextTreasureChallenge);
   }
 
   // Toggle Board # visibility based on chosen Type
@@ -478,6 +702,199 @@ async function handleLogAnyTaken(e) {
   }
 }
 
+async function handleTreasureUnlock(e) {
+  e.preventDefault();
+
+  const codeInput = document.getElementById('treasure-code-input');
+  const errorEl = document.getElementById('treasure-unlock-error');
+
+  try {
+    const response = await fetch(`${API_BASE}/auth-treasure-hunt`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: codeInput.value })
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Failed to unlock treasure hunt');
+    }
+
+    STATE.treasureToken = result.token;
+    localStorage.setItem('treasure_hunt_token', result.token);
+    codeInput.value = '';
+    if (errorEl) {
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+    }
+
+    await checkTreasureAuth();
+    await fetchData();
+  } catch (error) {
+    if (errorEl) {
+      errorEl.classList.remove('hidden');
+      errorEl.textContent = error.message;
+    } else {
+      alert(error.message);
+    }
+  }
+}
+
+async function handleTreasureVisibilityToggle(e) {
+  const payload = {
+    action: 'update_treasure_hunt_settings',
+    enabled: e.currentTarget.checked
+  };
+
+  await sendAdminAction(payload);
+}
+
+async function handleAddTreasureHint(e) {
+  e.preventDefault();
+
+  const payload = {
+    action: 'add_treasure_hunt_hint',
+    title: document.getElementById('treasure-hint-title').value.trim(),
+    description: document.getElementById('treasure-hint-description').value.trim()
+  };
+
+  const success = await sendAdminAction(payload);
+  if (success) {
+    document.getElementById('treasure-hint-title').value = '';
+    document.getElementById('treasure-hint-description').value = '';
+  }
+}
+
+async function handleUpdateTreasureHint(e) {
+  const hintId = e.currentTarget.getAttribute('data-id');
+  if (!hintId) return;
+
+  const card = e.currentTarget.closest('.treasure-admin-hint');
+  const titleInput = card ? card.querySelector('.treasure-hint-title-input') : null;
+  const descriptionInput = card ? card.querySelector('.treasure-hint-description-input') : null;
+
+  const payload = {
+    action: 'update_treasure_hunt_hint',
+    hintId,
+    title: titleInput ? titleInput.value.trim() : '',
+    description: descriptionInput ? descriptionInput.value.trim() : ''
+  };
+
+  await sendAdminAction(payload);
+}
+
+async function handleResetTreasureProgress() {
+  if (confirm('Reset the current treasure progress? This will keep the hints but remove all proof images and set the hunt back to stage 0.')) {
+    await sendAdminAction({ action: 'reset_treasure_hunt_progress' });
+  }
+}
+
+async function handleClearTreasureHints() {
+  if (confirm('Remove all treasure hints and proof images entirely? This will also disable the hunt.')) {
+    await sendAdminAction({ action: 'clear_treasure_hunt_hints' });
+  }
+}
+
+async function handleDeleteTreasureHint(e) {
+  const hintId = e.currentTarget.getAttribute('data-id');
+  if (!hintId) return;
+
+  if (confirm('Delete this treasure hint?')) {
+    await sendAdminAction({
+      action: 'delete_treasure_hunt_hint',
+      hintId
+    });
+  }
+}
+
+async function handleTreasureProofFileChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('treasure-proof-upload-status');
+  const hiddenInput = document.getElementById('treasure-proof-image-url');
+  const previewWrap = document.getElementById('treasure-proof-preview-wrap');
+  const previewImg = document.getElementById('treasure-proof-preview');
+
+  const showStatus = (text) => {
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.classList.remove('hidden');
+  };
+
+  if (file.size > MAX_IMAGE_BYTES) {
+    showStatus('Image too large (max 3MB).');
+    e.target.value = '';
+    return;
+  }
+
+  if (!STATE.token) {
+    alert('Authentication required to upload images.');
+    e.target.value = '';
+    return;
+  }
+
+  try {
+    showStatus('Uploading…');
+
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.readAsDataURL(file);
+    });
+
+    const response = await fetch(`${API_BASE}/upload-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${STATE.token}`
+      },
+      body: JSON.stringify({ imageData: dataUrl, personName: 'treasure-hunt-proof' })
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    hiddenInput.value = result.url;
+    if (previewImg && previewWrap) {
+      previewImg.src = result.url;
+      previewWrap.classList.remove('hidden');
+    }
+    showStatus('Uploaded ✓');
+    setTimeout(() => statusEl && statusEl.classList.add('hidden'), 2000);
+  } catch (error) {
+    showStatus('Upload error: ' + error.message);
+    e.target.value = '';
+  }
+}
+
+async function handleUnlockNextTreasureChallenge() {
+  const payload = {
+    action: 'unlock_treasure_hunt_next',
+    proofImageUrl: document.getElementById('treasure-proof-image-url').value.trim(),
+    proofNote: document.getElementById('treasure-proof-note').value.trim()
+  };
+
+  const success = await sendAdminAction(payload);
+  if (success) {
+    document.getElementById('treasure-proof-image-file').value = '';
+    document.getElementById('treasure-proof-image-url').value = '';
+    document.getElementById('treasure-proof-note').value = '';
+    const previewWrap = document.getElementById('treasure-proof-preview-wrap');
+    const previewImg = document.getElementById('treasure-proof-preview');
+    const statusEl = document.getElementById('treasure-proof-upload-status');
+    if (previewImg) previewImg.src = '';
+    if (previewWrap) previewWrap.classList.add('hidden');
+    if (statusEl) {
+      statusEl.classList.add('hidden');
+      statusEl.textContent = '';
+    }
+  }
+}
+
 // ==========================================================================
 // PERSON DROPDOWNS (Log Any Received / Log Any Taken)
 // ==========================================================================
@@ -507,7 +924,7 @@ function populatePersonSelects() {
   if (purgeSelect) {
     const current = purgeSelect.value;
     purgeSelect.innerHTML = '<option value="" disabled selected>Select a person to delete…</option>';
-    
+
     STATE.anytimers.forEach(person => {
       const opt = document.createElement('option');
       opt.value = person.name;
@@ -631,7 +1048,7 @@ function handleProfilePersonSelect() {
   if (boardInput) {
     boardInput.value = person?.boardNumber || '';
   }
-  
+
   if (boardGroup) {
     if (person?.type === 'external') {
       boardGroup.classList.add('hidden');
@@ -803,17 +1220,20 @@ async function sendAdminAction(payload) {
     }
 
     const resData = await response.json();
-    
+
     // Update local state with returning synced values
     STATE.anytimers = resData.anytimers || [];
     STATE.totalOutstanding = resData.totalOutstanding || 0;
     STATE.ledger = resData.ledger;
     STATE.gameLeaderboard = resData.gameLeaderboard || [];
+    STATE.treasureHunt = resData.treasureHunt || STATE.treasureHunt;
 
     renderDashboard();
     renderAnytimers();
     renderLedger();
     renderAdminLeaderboard();
+    renderTreasureHunt();
+    renderTreasureAdminPanel();
     populateProfileSelect();
     populatePersonSelects();
 
@@ -841,7 +1261,7 @@ function renderAdminLeaderboard() {
   const searchInput = document.getElementById('admin-leaderboard-search');
   const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-  const filteredScores = STATE.gameLeaderboard.filter(score => 
+  const filteredScores = STATE.gameLeaderboard.filter(score =>
     String(score.playerName || '').toLowerCase().includes(query)
   );
 
@@ -853,7 +1273,7 @@ function renderAdminLeaderboard() {
   filteredScores.forEach(score => {
     const globalRank = STATE.gameLeaderboard.findIndex(s => s.id === score.id) + 1;
     const tr = document.createElement('tr');
-    
+
     tr.innerHTML = `
       <td><strong>#${globalRank}</strong></td>
       <td>${escapeHtml(score.playerName)}</td>

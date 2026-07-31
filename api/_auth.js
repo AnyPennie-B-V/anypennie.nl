@@ -18,4 +18,22 @@ function verifyToken(req) {
   return parts[1] === expectedHash;
 }
 
-module.exports = { verifyToken };
+function createTreasureToken() {
+  const secret = process.env.TREASURE_HUNT_CODE || 'treasure123';
+  const hash = crypto.createHmac('sha256', secret)
+    .update('treasure-session')
+    .digest('hex');
+  return `treasure.${hash}`;
+}
+
+function verifyTreasureToken(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+
+  const token = authHeader.split(' ')[1];
+  return token === createTreasureToken();
+}
+
+module.exports = { verifyToken, createTreasureToken, verifyTreasureToken };

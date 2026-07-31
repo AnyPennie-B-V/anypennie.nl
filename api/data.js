@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { verifyToken } = require('./_auth');
+const { verifyToken, verifyTreasureToken } = require('./_auth');
+const { del: deleteBlob } = require('@vercel/blob');
 
 const localDataPath = path.join(process.cwd(), 'data.json');
 let inMemoryData = null;
@@ -8,7 +9,13 @@ let inMemoryData = null;
 const DEFAULT_DATA = {
   anytimers: [],
   ledger: [],
-  gameLeaderboard: []
+  gameLeaderboard: [],
+  treasureHunt: {
+    enabled: false,
+    currentStage: 0,
+    completed: false,
+    hints: []
+  }
 };
 
 // Helper to read data with dual-mode storage
@@ -158,12 +165,96 @@ function getLeaderboardNameKey(name) {
   return normalizeLeaderboardName(name).toLowerCase();
 }
 
+function createTreasureHintId() {
+  return 'hint-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+}
+
+function sanitizeTreasureHint(hint) {
+  const title = sanitizeProfileText(hint?.title, 120);
+  const description = sanitizeProfileText(hint?.description, 1000);
+  const id = sanitizeProfileText(hint?.id, 80) || createTreasureHintId();
+
+  return {
+    id,
+    title,
+    description,
+    proofImageUrl: sanitizeProfileText(hint?.proofImageUrl, 500),
+    proofNote: sanitizeProfileText(hint?.proofNote, 300),
+    unlockedAt: sanitizeProfileText(hint?.unlockedAt, 80)
+  };
+}
+
+function sanitizeTreasureHunt(rawTreasureHunt) {
+  const source = rawTreasureHunt && typeof rawTreasureHunt === 'object' ? rawTreasureHunt : {};
+  const hints = Array.isArray(source.hints)
+    ? source.hints.map(sanitizeTreasureHint).filter(hint => hint.title || hint.description)
+    : [];
+
+  let currentStage = parseInt(source.currentStage, 10);
+  if (!Number.isFinite(currentStage) || currentStage < 0) {
+    currentStage = 0;
+  }
+
+  currentStage = Math.min(currentStage, hints.length);
+
+  if (!source.enabled) {
+    currentStage = 0;
+  }
+
+  const completed = !!source.completed && !!source.enabled && hints.length > 0 && currentStage >= hints.length;
+
+  return {
+    enabled: !!source.enabled,
+    currentStage,
+    completed,
+    hints
+  };
+}
+
+async function deleteTreasureProofAsset(imageUrl) {
+  const safeUrl = String(imageUrl || '').trim();
+  if (!safeUrl) {
+    return;
+  }
+
+  if (/^assets\/uploads\//i.test(safeUrl)) {
+    const localFilePath = path.join(process.cwd(), safeUrl);
+    if (localFilePath.startsWith(path.join(process.cwd(), 'assets')) && fs.existsSync(localFilePath)) {
+      try {
+        fs.unlinkSync(localFilePath);
+      } catch (err) {
+        console.warn('Failed to delete local treasure proof asset:', err.message);
+      }
+    }
+    return;
+  }
+
+  if (process.env.BLOB_READ_WRITE_TOKEN && /^https?:\/\//i.test(safeUrl)) {
+    try {
+      await deleteBlob(safeUrl, { token: process.env.BLOB_READ_WRITE_TOKEN });
+    } catch (err) {
+      console.warn('Failed to delete blob treasure proof asset:', err.message);
+    }
+  }
+}
+
+async function deleteTreasureProofAssets(hints) {
+  const uniqueUrls = [...new Set(
+    (Array.isArray(hints) ? hints : [])
+      .map(hint => hint?.proofImageUrl)
+      .filter(Boolean)
+  )];
+
+  await Promise.all(uniqueUrls.map(deleteTreasureProofAsset));
+}
+
 // Recalculates balances from the ledger to ensure consistent state
 function recalculateTotals(data) {
   const cleanData = {
     anytimers: Array.isArray(data.anytimers) ? data.anytimers : [],
     ledger: Array.isArray(data.ledger) ? data.ledger : [],
-    gameLeaderboard: Array.isArray(data.gameLeaderboard) ? data.gameLeaderboard : []
+    gameLeaderboard: Array.isArray(data.gameLeaderboard) ? data.gameLeaderboard : [],
+    treasureHunt: sanitizeTreasureHunt(data.treasureHunt)
   };
 
   // Profile info (image, role, fun fact) is NOT derived from the ledger, so
@@ -296,9 +387,17 @@ module.exports = async (req, res) => {
     const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const wantAllGames = urlObj.searchParams.get('all_games') === 'true';
     const checkAuth = urlObj.searchParams.get('check_auth') === 'true';
+    const checkTreasureAuth = urlObj.searchParams.get('check_treasure_auth') === 'true';
     const isAdmin = verifyToken(req);
+    const isTreasure = verifyTreasureToken(req);
 
     if (checkAuth && !isAdmin) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
+    if (checkTreasureAuth && !isTreasure) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Unauthorized' }));
       return;
@@ -309,12 +408,29 @@ module.exports = async (req, res) => {
       ? cleanData.gameLeaderboard 
       : getDeduplicatedLeaderboard(cleanData.gameLeaderboard);
 
+    const treasureHuntToSend = isAdmin
+      ? cleanData.treasureHunt
+      : isTreasure
+        ? {
+            enabled: cleanData.treasureHunt.enabled,
+            currentStage: cleanData.treasureHunt.currentStage,
+            completed: cleanData.treasureHunt.completed,
+            hints: cleanData.treasureHunt.hints.slice(0, cleanData.treasureHunt.currentStage)
+          }
+        : {
+            enabled: cleanData.treasureHunt.enabled,
+            currentStage: cleanData.treasureHunt.completed ? cleanData.treasureHunt.hints.length : 0,
+            completed: cleanData.treasureHunt.completed,
+            hints: cleanData.treasureHunt.completed ? cleanData.treasureHunt.hints : []
+          };
+
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       anytimers: cleanData.anytimers,
       totalOutstanding: cleanData.totalOutstanding,
       ledger: cleanData.ledger,
       gameLeaderboard: leaderboardToSend,
+      treasureHunt: treasureHuntToSend,
       storageWarning: warning
     }));
     return;
@@ -512,6 +628,136 @@ module.exports = async (req, res) => {
         }
 
         cleanData.gameLeaderboard.sort((a, b) => b.score - a.score);
+      } else if (action === 'update_treasure_hunt_settings') {
+        const enabled = !!body.enabled;
+        cleanData.treasureHunt.enabled = enabled;
+        if (!enabled) {
+          cleanData.treasureHunt.currentStage = 0;
+          cleanData.treasureHunt.completed = false;
+        } else if (cleanData.treasureHunt.hints.length > 0 && cleanData.treasureHunt.currentStage === 0) {
+          cleanData.treasureHunt.currentStage = 1;
+          cleanData.treasureHunt.completed = false;
+        }
+      } else if (action === 'add_treasure_hunt_hint') {
+        const title = sanitizeProfileText(body.title, 120);
+        const description = sanitizeProfileText(body.description, 1000);
+
+        if (!title || !description) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required parameters' }));
+          return;
+        }
+
+        cleanData.treasureHunt.hints.push({
+          id: createTreasureHintId(),
+          title,
+          description,
+          proofImageUrl: '',
+          proofNote: '',
+          unlockedAt: ''
+        });
+
+        if (cleanData.treasureHunt.enabled && cleanData.treasureHunt.currentStage === 0) {
+          cleanData.treasureHunt.currentStage = 1;
+        }
+        cleanData.treasureHunt.completed = false;
+      } else if (action === 'delete_treasure_hunt_hint') {
+        const hintId = sanitizeProfileText(body.hintId, 80);
+
+        if (!hintId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing hintId' }));
+          return;
+        }
+
+        const targetHint = cleanData.treasureHunt.hints.find(hint => hint.id === hintId);
+        if (!targetHint) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Hint not found' }));
+          return;
+        }
+
+        await deleteTreasureProofAsset(targetHint.proofImageUrl);
+
+        cleanData.treasureHunt.hints = cleanData.treasureHunt.hints.filter(hint => hint.id !== hintId);
+
+        if (cleanData.treasureHunt.currentStage > cleanData.treasureHunt.hints.length) {
+          cleanData.treasureHunt.currentStage = cleanData.treasureHunt.hints.length;
+        }
+        if (cleanData.treasureHunt.hints.length === 0) {
+          cleanData.treasureHunt.completed = false;
+        }
+      } else if (action === 'update_treasure_hunt_hint') {
+        const hintId = sanitizeProfileText(body.hintId, 80);
+        const title = sanitizeProfileText(body.title, 120);
+        const description = sanitizeProfileText(body.description, 1000);
+
+        if (!hintId || !title || !description) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required parameters' }));
+          return;
+        }
+
+        const targetHint = cleanData.treasureHunt.hints.find(hint => hint.id === hintId);
+        if (!targetHint) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Hint not found' }));
+          return;
+        }
+
+        targetHint.title = title;
+        targetHint.description = description;
+      } else if (action === 'reset_treasure_hunt_progress') {
+        await deleteTreasureProofAssets(cleanData.treasureHunt.hints);
+        cleanData.treasureHunt.hints = cleanData.treasureHunt.hints.map(hint => ({
+          ...hint,
+          proofImageUrl: '',
+          proofNote: '',
+          unlockedAt: ''
+        }));
+        cleanData.treasureHunt.currentStage = 0;
+        cleanData.treasureHunt.completed = false;
+      } else if (action === 'clear_treasure_hunt_hints') {
+        await deleteTreasureProofAssets(cleanData.treasureHunt.hints);
+        cleanData.treasureHunt.hints = [];
+        cleanData.treasureHunt.currentStage = 0;
+        cleanData.treasureHunt.enabled = false;
+        cleanData.treasureHunt.completed = false;
+      } else if (action === 'unlock_treasure_hunt_next') {
+        if (!cleanData.treasureHunt.enabled) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Treasure hunt is disabled' }));
+          return;
+        }
+
+        const proofImageUrl = sanitizeProfileText(body.proofImageUrl, 500);
+        const proofNote = sanitizeProfileText(body.proofNote, 300);
+        const hintCount = cleanData.treasureHunt.hints.length;
+
+        if (hintCount === 0) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'No hints have been created yet' }));
+          return;
+        }
+
+        const currentStage = Math.max(0, Math.min(cleanData.treasureHunt.currentStage, hintCount));
+        const isFinalCompletion = currentStage >= hintCount;
+        const targetIndex = Math.max(0, Math.min(currentStage - 1, hintCount - 1));
+        const targetHint = cleanData.treasureHunt.hints[targetIndex];
+
+        if (targetHint) {
+          targetHint.proofImageUrl = proofImageUrl;
+          targetHint.proofNote = proofNote;
+          targetHint.unlockedAt = new Date().toISOString();
+        }
+
+        if (isFinalCompletion) {
+          cleanData.treasureHunt.currentStage = hintCount;
+          cleanData.treasureHunt.completed = true;
+        } else {
+          cleanData.treasureHunt.currentStage = Math.min(hintCount, currentStage + 1);
+          cleanData.treasureHunt.completed = false;
+        }
       }
       else {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -535,6 +781,7 @@ module.exports = async (req, res) => {
         totalOutstanding: finalData.totalOutstanding,
         ledger: finalData.ledger,
         gameLeaderboard: leaderboardToSend,
+        treasureHunt: finalData.treasureHunt,
         storage: saveResult.storage
       }));
     } catch (err) {

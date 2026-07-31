@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt</title>
+    <meta name="description" content="Annual treasure hunt for the new treasurer.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="treasure-hunt.css">
+</head>
+
+<body class="treasure-page">
+    <div class="bg-pattern"></div>
+    <div class="bg-radial-glow"></div>
+
+    <div class="treasure-page-shell">
+        <a href="index.html" class="treasure-page-back">← BACK TO HOME</a>
+
+        <main class="treasure-page-main">
+            <div class="treasure-page-layout">
+
+                <section class="card treasure-page-card" aria-live="polite">
+                    <img src="assets/treasure-chest.png" alt="Treasure Hunt" class="treasure-page-icon">
+                    <div class="treasure-page-kicker">Thalia's Treasure Hunt</div>
+                    <h1 class="treasure-page-title">TREASURE HUNT</h1>
+                    <p id="treasure-page-intro" class="treasure-page-intro">Loading hunt status...</p>
+
+                    <div id="treasure-page-status" class="treasure-page-status hidden">
+                        <span class="treasure-page-status-label">Visible hints</span>
+                        <span class="treasure-page-status-value" id="treasure-page-visible-count">0</span>
+                    </div>
+                </section>
+
+                <!-- RIGHT COLUMN: Action & Hint Cards -->
+                <section class="treasure-page-grid" aria-live="polite">
+
+                    <!-- Locked State Card -->
+                    <div id="treasure-page-locked" class="card treasure-page-lock hidden">
+                        <h2>Unlock the hunt</h2>
+                        <p>Enter the secret code to reveal the first hint.</p>
+                        <form id="treasure-page-unlock-form" class="treasure-page-form">
+                            <div class="form-group">
+                                <label for="treasure-page-code">Secret Code</label>
+                                <input type="password" id="treasure-page-code" placeholder="••••••••"
+                                    autocomplete="one-time-code" required>
+                            </div>
+                            <div id="treasure-page-error" class="error-msg hidden"></div>
+                            <button type="submit" class="cta-button primary-btn">UNLOCK HUNT</button>
+                        </form>
+                    </div>
+
+                    <!-- Hints State Card -->
+                    <div id="treasure-page-content" class="card treasure-page-hints hidden">
+                        <h2>Your Hints</h2>
+                        <div id="treasure-page-hint-list" class="treasure-page-hint-list"></div>
+                    </div>
+
+                    <!-- Empty/Inactive State Card -->
+                    <div id="treasure-page-empty" class="card treasure-page-empty hidden">
+                        <p>The treasure hunt is not active yet. Check back once the admins switch it on.</p>
+                    </div>
+
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <div class="footer-container">
+            <p class="copyright">COPYRIGHT 2026 &copy; THALIA'S TREASURY</p>
+        </div>
+    </footer>
+
+    <script src="treasure-hunt.js"></script>
+</body>
+
+</html>
