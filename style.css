@@ -909,7 +909,8 @@ nav .nav-link.active::after {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 0.8rem 1rem;
   background: rgba(255, 255, 255, 0.03);
@@ -922,11 +923,17 @@ nav .nav-link.active::after {
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
   outline: none;
   border-color: var(--gold-color);
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
   background: rgba(255, 255, 255, 0.05);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 110px;
 }
 
 .form-group input[type="file"] {
@@ -1121,6 +1128,198 @@ nav .nav-link.active::after {
   color: var(--text-secondary);
   font-size: 0.85rem;
   margin-bottom: 1.5rem;
+}
+
+.treasure-admin-card,
+.treasure-hero-card {
+  width: 100%;
+}
+
+.treasure-kicker {
+  font-family: var(--font-display);
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--gold-color);
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 0.35rem;
+}
+
+.treasure-intro {
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 760px;
+  margin: -0.5rem auto 1.5rem;
+}
+
+.treasure-lock-card,
+.treasure-content,
+.treasure-admin-hints-wrap,
+.treasure-admin-proof {
+  margin-top: 1.5rem;
+}
+
+.treasure-unlock-form {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.treasure-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.treasure-toggle-row input {
+  width: auto;
+  accent-color: var(--gold-color);
+}
+
+.treasure-admin-form {
+  margin-bottom: 1.5rem;
+}
+
+.treasure-admin-action-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 1.5rem;
+}
+
+.treasure-admin-hint-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.treasure-admin-hint-actions .cta-button,
+.treasure-admin-hint-actions .delete-tx-btn {
+  margin-bottom: 0;
+}
+
+.treasure-hint-title-input,
+.treasure-hint-description-input {
+  width: 100%;
+}
+
+.treasure-admin-hints {
+  display: grid;
+  gap: 1rem;
+}
+
+.treasure-admin-hint {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.treasure-admin-hint-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.7rem;
+}
+
+.treasure-admin-hint-title {
+  color: var(--gold-color);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  font-size: 1.1rem;
+  margin-top: 0.15rem;
+}
+
+.treasure-proof-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  color: var(--gold-color);
+  text-decoration: none;
+}
+
+.treasure-proof-link:hover {
+  text-decoration: underline;
+}
+
+.treasure-admin-proof-note {
+  margin-top: 0.65rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.treasure-progress-card {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.treasure-progress-label {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 0.8rem;
+}
+
+.treasure-progress-value {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: var(--gold-color);
+  line-height: 1;
+}
+
+.treasure-hint-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.treasure-hint-card {
+  padding: 1.2rem;
+}
+
+.treasure-hint-card h3 {
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  font-size: 1.45rem;
+  color: var(--gold-color);
+  margin: 0.5rem 0 0.6rem;
+}
+
+.treasure-hint-card p {
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.treasure-hint-badge {
+  display: inline-block;
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(230, 34, 114, 0.12);
+  border: 1px solid rgba(230, 34, 114, 0.22);
+  color: var(--gold-color);
+}
+
+.treasure-empty {
+  padding: 1rem 1.2rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .quick-log-grid {
@@ -1507,4 +1706,45 @@ footer {
 .easter-egg-coin:hover {
   opacity: 0.6;
   transform: scale(1.1);
+}
+
+.easter-egg-treasure {
+  left: auto;
+  right: 4px;
+  opacity: 0;
+  transform: translateY(10px) scale(0.9);
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 46px;
+  height: 46px;
+}
+
+.easter-egg-treasure:not(.hidden) {
+  opacity: 0.95;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  animation: treasurePopIn 0.35s ease-out;
+}
+
+.easter-egg-treasure img {
+  filter: drop-shadow(0 0 14px rgba(230, 34, 114, 0.45));
+}
+
+.easter-egg-treasure:hover {
+  opacity: 1;
+  transform: scale(1.12);
+}
+
+@keyframes treasurePopIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.82);
+  }
+
+  to {
+    opacity: 0.95;
+    transform: translateY(0) scale(1);
+  }
 }

@@ -28,7 +28,7 @@
   <header>
     <div class="header-container">
       <div class="site-logo-container">
-        <img src="assets/logo-white.png" alt="Any Pennie Logo" class="logo-image">
+        <img src="assets/logo-white.png" alt="Any Pennie Logo" class="logo-image" onclick="window.location.href='index.html'">
         <div class="site-logo" id="site-logo">
           ANY PENNIE ADMINISTRATION
         </div>
@@ -140,6 +140,40 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: TREASURE HUNT -->
+    <section id="tab-treasure-hunt" class="tab-content hidden">
+      <div class="section-container treasure-section">
+        <div class="card treasure-hero-card">
+          <p class="treasure-kicker">Annual scavenger hunt</p>
+          <h1 class="section-title">TREASURE HUNT</h1>
+          <p id="treasure-hunt-intro" class="treasure-intro">
+            This hunt is hidden until the admins switch it on.
+          </p>
+
+          <div id="treasure-hunt-locked" class="treasure-lock-card hidden">
+            <h2>Unlock the hunt</h2>
+            <p>Enter the secret code you received from the admins to reveal the first hint.</p>
+            <form id="treasure-unlock-form" class="treasure-unlock-form">
+              <div class="form-group">
+                <label for="treasure-code-input">Secret Code</label>
+                <input type="password" id="treasure-code-input" placeholder="••••••••" autocomplete="one-time-code" required>
+              </div>
+              <div id="treasure-unlock-error" class="error-msg hidden"></div>
+              <button type="submit" class="cta-button primary-btn">UNLOCK HUNT</button>
+            </form>
+          </div>
+
+          <div id="treasure-hunt-content" class="treasure-content hidden">
+            <div class="treasure-progress-card">
+              <div class="treasure-progress-label">Visible hints</div>
+              <div class="treasure-progress-value" id="treasure-visible-count">0</div>
+            </div>
+            <div id="treasure-hunt-hints" class="treasure-hint-list"></div>
           </div>
         </div>
       </div>
@@ -331,6 +365,58 @@
               </div>
             </div>
 
+            <div class="card admin-control-card treasure-admin-card" style="grid-column: span 2;">
+              <h3>Treasure Hunt</h3>
+              <p>Toggle the hunt, create hint cards, and unlock the next location after the treasurer sends proof.</p>
+
+              <label class="treasure-toggle-row" for="treasure-enabled-toggle">
+                <input type="checkbox" id="treasure-enabled-toggle">
+                <span>Make treasure hunt visible</span>
+              </label>
+
+              <div class="treasure-admin-action-row">
+                <button type="button" class="danger-btn" id="btn-reset-treasure-progress">Reset Progress</button>
+                <button type="button" class="danger-btn" id="btn-clear-treasure-hints">Clear All Hints</button>
+              </div>
+
+              <form id="form-add-treasure-hint" class="treasure-admin-form">
+                <div class="form-group">
+                  <label for="treasure-hint-title">Hint Title</label>
+                  <input type="text" id="treasure-hint-title" placeholder="e.g. First stop" required>
+                </div>
+                <div class="form-group">
+                  <label for="treasure-hint-description">Hint Description</label>
+                  <textarea id="treasure-hint-description" rows="4" placeholder="Write the clue for the next location" required></textarea>
+                </div>
+                <button type="submit" class="cta-button secondary-btn">Add Hint</button>
+              </form>
+
+              <div class="treasure-admin-hints-wrap">
+                <h4>Current Hints</h4>
+                <div id="treasure-admin-hints" class="treasure-admin-hints"></div>
+              </div>
+
+              <div class="treasure-admin-proof">
+                <h4>Unlock Next Challenge</h4>
+                <p>Either upload a proof image or add a note (or both), then reveal the next hint.</p>
+                <div class="form-group">
+                  <label for="treasure-proof-image-file">Proof Picture</label>
+                  <input type="file" id="treasure-proof-image-file" accept="image/png, image/jpeg, image/webp, image/gif">
+                  <p class="form-hint">PNG, JPG, WEBP, or GIF — max 3MB.</p>
+                  <p class="upload-status hidden" id="treasure-proof-upload-status"></p>
+                  <div class="profile-image-preview-wrap hidden" id="treasure-proof-preview-wrap">
+                    <img id="treasure-proof-preview" alt="Treasure proof preview">
+                  </div>
+                  <input type="hidden" id="treasure-proof-image-url" value="">
+                </div>
+                <div class="form-group">
+                  <label for="treasure-proof-note">Note</label>
+                  <input type="text" id="treasure-proof-note" placeholder="Treasurer sent proof, but image was too big to upload.">
+                </div>
+                <button class="cta-button" id="btn-unlock-next-treasure-hunt" type="button">Unlock Next Challenge</button>
+              </div>
+            </div>
+
             <div class="card admin-control-card settings-card">
               <h3>Danger Zone</h3>
               <p>Permanently delete a specific person, or purge the entire audit trail.</p>
@@ -455,6 +541,11 @@
   <!-- Easter Egg Game Link -->
   <a href="game.html" class="easter-egg-coin">
     <img src="assets/kanon.png" alt="Secret Game">
+  </a>
+
+  <!-- Treasure Hunt Launcher -->
+  <a href="treasure-hunt.html" class="easter-egg-coin easter-egg-treasure hidden" id="treasure-hunt-launcher" aria-label="Open treasure hunt">
+    <img src="assets/treasure-chest.png" alt="Treasure Hunt">
   </a>
 
   <!-- Footer -->
